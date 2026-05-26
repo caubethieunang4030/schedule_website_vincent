@@ -1,0 +1,1010 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 0.1.0
+  description: Learning Summit API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+  - name: users
+  - name: sessions
+  - name: registrations
+  - name: attendance
+  - name: feedback
+  - name: tasks
+  - name: forms
+  - name: notifications
+  - name: dashboard
+  - name: students
+
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /me:
+    get:
+      operationId: getMe
+      tags: [users]
+      summary: Get current user profile
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+    patch:
+      operationId: updateMe
+      tags: [users]
+      summary: Update current user role/division
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMeBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      summary: List all users (for task assignment)
+      responses:
+        "200":
+          description: Users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+
+  /sessions:
+    get:
+      operationId: listSessions
+      tags: [sessions]
+      summary: List all sessions, optionally filtered
+      parameters:
+        - in: query
+          name: track
+          schema:
+            $ref: "#/components/schemas/Track"
+      responses:
+        "200":
+          description: Sessions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Session"
+    post:
+      operationId: createSession
+      tags: [sessions]
+      summary: Create a new session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSessionBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+
+  /sessions/{id}:
+    get:
+      operationId: getSession
+      tags: [sessions]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionDetail"
+    patch:
+      operationId: updateSession
+      tags: [sessions]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSessionBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+    delete:
+      operationId: deleteSession
+      tags: [sessions]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+
+  /sessions/{id}/register:
+    post:
+      operationId: registerForSession
+      tags: [registrations]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Registration"
+    delete:
+      operationId: unregisterFromSession
+      tags: [registrations]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Unregistered
+
+  /sessions/{id}/checkin:
+    post:
+      operationId: checkInToSession
+      tags: [attendance]
+      summary: Check in to a session (QR scan or room-based)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckInBody"
+      responses:
+        "200":
+          description: Checked in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Attendance"
+
+  /sessions/{id}/attendance:
+    get:
+      operationId: listSessionAttendance
+      tags: [attendance]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Attendance list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AttendanceWithUser"
+
+  /me/registrations:
+    get:
+      operationId: getMyRegistrations
+      tags: [registrations]
+      summary: Get current user's registrations and schedule
+      responses:
+        "200":
+          description: My schedule
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Session"
+
+  /sessions/{id}/feedback:
+    get:
+      operationId: listSessionFeedback
+      tags: [feedback]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Feedback list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeedbackSummary"
+    post:
+      operationId: submitFeedback
+      tags: [feedback]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitFeedbackBody"
+      responses:
+        "201":
+          description: Feedback created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Feedback"
+
+  /tasks:
+    get:
+      operationId: listTasks
+      tags: [tasks]
+      responses:
+        "200":
+          description: Tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Task"
+    post:
+      operationId: createTask
+      tags: [tasks]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTaskBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+
+  /tasks/{id}:
+    patch:
+      operationId: updateTask
+      tags: [tasks]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTaskBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+    delete:
+      operationId: deleteTask
+      tags: [tasks]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+
+  /tasks/export:
+    get:
+      operationId: exportTasks
+      tags: [tasks]
+      summary: Export tasks/event status report data
+      responses:
+        "200":
+          description: Export data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskExport"
+
+  /forms:
+    get:
+      operationId: listForms
+      tags: [forms]
+      responses:
+        "200":
+          description: Forms
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Form"
+    post:
+      operationId: createForm
+      tags: [forms]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFormBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Form"
+
+  /forms/{id}:
+    get:
+      operationId: getForm
+      tags: [forms]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Form
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FormDetail"
+
+  /forms/{id}/responses:
+    post:
+      operationId: submitFormResponse
+      tags: [forms]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitFormResponseBody"
+      responses:
+        "201":
+          description: Response submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FormResponse"
+    get:
+      operationId: listFormResponses
+      tags: [forms]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Responses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FormResponse"
+
+  /notifications:
+    get:
+      operationId: listNotifications
+      tags: [notifications]
+      responses:
+        "200":
+          description: Notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+    post:
+      operationId: createNotification
+      tags: [notifications]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateNotificationBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+
+  /students:
+    get:
+      operationId: listInvitedStudents
+      tags: [students]
+      summary: List invited students with registration status
+      responses:
+        "200":
+          description: Invited students
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InvitedStudent"
+    post:
+      operationId: importInvitedStudents
+      tags: [students]
+      summary: Bulk-create invited students from a parsed roster
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImportInvitedStudentsBody"
+      responses:
+        "200":
+          description: Import result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportInvitedStudentsResult"
+
+  /students/{id}:
+    delete:
+      operationId: deleteInvitedStudent
+      tags: [students]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Removed
+
+  /feedback/aggregate:
+    get:
+      operationId: getFeedbackAggregate
+      tags: [feedback]
+      summary: Aggregated feedback grouped by session
+      responses:
+        "200":
+          description: Aggregated feedback
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SessionFeedbackAggregate"
+
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Aggregate counts for the dashboard view
+      responses:
+        "200":
+          description: Summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required: [status]
+
+    Track:
+      type: string
+      enum: [lower, middle, upper, all, required_all, teachers]
+
+    Role:
+      type: string
+      enum: [student, faculty, organizer, admin]
+
+    User:
+      type: object
+      properties:
+        id: { type: string }
+        email: { type: string }
+        firstName: { type: string, nullable: true }
+        lastName: { type: string, nullable: true }
+        imageUrl: { type: string, nullable: true }
+        role: { $ref: "#/components/schemas/Role" }
+        division: { $ref: "#/components/schemas/Track" }
+        createdAt: { type: string }
+      required: [id, email, role, division, createdAt]
+
+    UpdateMeBody:
+      type: object
+      properties:
+        role: { $ref: "#/components/schemas/Role" }
+        division: { $ref: "#/components/schemas/Track" }
+
+    Speaker:
+      type: object
+      properties:
+        name: { type: string }
+        title: { type: string, nullable: true }
+        bio: { type: string, nullable: true }
+      required: [name]
+
+    Session:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string }
+        location: { type: string }
+        room: { type: string }
+        track: { $ref: "#/components/schemas/Track" }
+        mandatory: { type: boolean }
+        capacity: { type: integer }
+        registeredCount: { type: integer }
+        startsAt: { type: string }
+        endsAt: { type: string }
+        organizers: { type: array, items: { type: string } }
+        speakers:
+          type: array
+          items: { $ref: "#/components/schemas/Speaker" }
+        tags: { type: array, items: { type: string } }
+        isRegistered: { type: boolean }
+      required: [id, title, description, location, room, track, mandatory, capacity, registeredCount, startsAt, endsAt, organizers, speakers, tags, isRegistered]
+
+    SessionDetail:
+      allOf:
+        - $ref: "#/components/schemas/Session"
+        - type: object
+          properties:
+            attendees:
+              type: array
+              items: { $ref: "#/components/schemas/User" }
+          required: [attendees]
+
+    CreateSessionBody:
+      type: object
+      properties:
+        title: { type: string }
+        description: { type: string }
+        location: { type: string }
+        room: { type: string }
+        track: { $ref: "#/components/schemas/Track" }
+        mandatory: { type: boolean }
+        capacity: { type: integer }
+        startsAt: { type: string }
+        endsAt: { type: string }
+        organizers: { type: array, items: { type: string } }
+        speakers:
+          type: array
+          items: { $ref: "#/components/schemas/Speaker" }
+        tags: { type: array, items: { type: string } }
+      required: [title, description, location, room, track, capacity, startsAt, endsAt]
+
+    UpdateSessionBody:
+      type: object
+      properties:
+        title: { type: string }
+        description: { type: string }
+        location: { type: string }
+        room: { type: string }
+        track: { $ref: "#/components/schemas/Track" }
+        mandatory: { type: boolean }
+        capacity: { type: integer }
+        startsAt: { type: string }
+        endsAt: { type: string }
+        organizers: { type: array, items: { type: string } }
+        speakers:
+          type: array
+          items: { $ref: "#/components/schemas/Speaker" }
+        tags: { type: array, items: { type: string } }
+
+    Registration:
+      type: object
+      properties:
+        id: { type: string }
+        sessionId: { type: string }
+        userId: { type: string }
+        createdAt: { type: string }
+      required: [id, sessionId, userId, createdAt]
+
+    CheckInMethod:
+      type: string
+      enum: [qr, room]
+
+    CheckInBody:
+      type: object
+      properties:
+        method: { $ref: "#/components/schemas/CheckInMethod" }
+        code: { type: string, nullable: true }
+      required: [method]
+
+    Attendance:
+      type: object
+      properties:
+        id: { type: string }
+        sessionId: { type: string }
+        userId: { type: string }
+        method: { $ref: "#/components/schemas/CheckInMethod" }
+        checkedInAt: { type: string }
+      required: [id, sessionId, userId, method, checkedInAt]
+
+    AttendanceWithUser:
+      type: object
+      properties:
+        id: { type: string }
+        sessionId: { type: string }
+        userId: { type: string }
+        method: { $ref: "#/components/schemas/CheckInMethod" }
+        checkedInAt: { type: string }
+        user: { $ref: "#/components/schemas/User" }
+      required: [id, sessionId, userId, method, checkedInAt, user]
+
+    Feedback:
+      type: object
+      properties:
+        id: { type: string }
+        sessionId: { type: string }
+        userId: { type: string }
+        rating: { type: integer }
+        comment: { type: string, nullable: true }
+        createdAt: { type: string }
+        userName: { type: string, nullable: true }
+      required: [id, sessionId, userId, rating, createdAt]
+
+    SubmitFeedbackBody:
+      type: object
+      properties:
+        rating: { type: integer, minimum: 1, maximum: 5 }
+        comment: { type: string, nullable: true }
+      required: [rating]
+
+    FeedbackSummary:
+      type: object
+      properties:
+        averageRating: { type: number }
+        count: { type: integer }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Feedback" }
+      required: [averageRating, count, items]
+
+    SessionFeedbackAggregate:
+      type: object
+      properties:
+        sessionId: { type: string }
+        sessionTitle: { type: string }
+        track: { $ref: "#/components/schemas/Track" }
+        startsAt: { type: string }
+        averageRating: { type: number }
+        count: { type: integer }
+        recentComments:
+          type: array
+          items:
+            type: object
+            properties:
+              comment: { type: string }
+              userName: { type: string, nullable: true }
+              rating: { type: integer }
+              createdAt: { type: string }
+            required: [comment, rating, createdAt]
+      required: [sessionId, sessionTitle, track, startsAt, averageRating, count, recentComments]
+
+    InvitedStudent:
+      type: object
+      properties:
+        id: { type: string }
+        email: { type: string }
+        firstName: { type: string, nullable: true }
+        lastName: { type: string, nullable: true }
+        division: { $ref: "#/components/schemas/Track" }
+        registered: { type: boolean }
+        registeredAt: { type: string, nullable: true }
+        invitedAt: { type: string }
+      required: [id, email, division, registered, invitedAt]
+
+    ImportInvitedStudentRow:
+      type: object
+      properties:
+        email: { type: string }
+        firstName: { type: string, nullable: true }
+        lastName: { type: string, nullable: true }
+        division: { $ref: "#/components/schemas/Track" }
+      required: [email]
+
+    ImportInvitedStudentsBody:
+      type: object
+      properties:
+        rows:
+          type: array
+          items: { $ref: "#/components/schemas/ImportInvitedStudentRow" }
+      required: [rows]
+
+    ImportInvitedStudentsResult:
+      type: object
+      properties:
+        inserted: { type: integer }
+        skipped: { type: integer }
+      required: [inserted, skipped]
+
+    TaskStatus:
+      type: string
+      enum: [todo, in_progress, done, blocked]
+
+    Task:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string, nullable: true }
+        assigneeId: { type: string }
+        assigneeName: { type: string, nullable: true }
+        assigneeEmail: { type: string, nullable: true }
+        status: { $ref: "#/components/schemas/TaskStatus" }
+        dueAt: { type: string, nullable: true }
+        createdAt: { type: string }
+        completedAt: { type: string, nullable: true }
+      required: [id, title, assigneeId, status, createdAt]
+
+    CreateTaskBody:
+      type: object
+      properties:
+        title: { type: string }
+        description: { type: string, nullable: true }
+        assigneeId: { type: string }
+        dueAt: { type: string, nullable: true }
+        status: { $ref: "#/components/schemas/TaskStatus" }
+      required: [title, assigneeId]
+
+    UpdateTaskBody:
+      type: object
+      properties:
+        title: { type: string }
+        description: { type: string, nullable: true }
+        assigneeId: { type: string }
+        dueAt: { type: string, nullable: true }
+        status: { $ref: "#/components/schemas/TaskStatus" }
+
+    TaskExportRow:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string, nullable: true }
+        assigneeName: { type: string, nullable: true }
+        assigneeEmail: { type: string, nullable: true }
+        status: { type: string }
+        dueAt: { type: string, nullable: true }
+        completedAt: { type: string, nullable: true }
+        createdAt: { type: string }
+      required: [id, title, status, createdAt]
+
+    SessionExportRow:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        track: { type: string }
+        room: { type: string }
+        capacity: { type: integer }
+        registeredCount: { type: integer }
+        attendedCount: { type: integer }
+        startsAt: { type: string }
+      required: [id, title, track, room, capacity, registeredCount, attendedCount, startsAt]
+
+    TaskExport:
+      type: object
+      properties:
+        tasks:
+          type: array
+          items: { $ref: "#/components/schemas/TaskExportRow" }
+        sessions:
+          type: array
+          items: { $ref: "#/components/schemas/SessionExportRow" }
+      required: [tasks, sessions]
+
+    FormFieldType:
+      type: string
+      enum: [text, textarea, number, select, checkbox]
+
+    FormField:
+      type: object
+      properties:
+        key: { type: string }
+        label: { type: string }
+        type: { $ref: "#/components/schemas/FormFieldType" }
+        required: { type: boolean }
+        options: { type: array, items: { type: string } }
+      required: [key, label, type, required]
+
+    Form:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string, nullable: true }
+        sessionId: { type: string, nullable: true }
+        creatorId: { type: string }
+        creatorName: { type: string, nullable: true }
+        responseCount: { type: integer }
+        createdAt: { type: string }
+      required: [id, title, creatorId, responseCount, createdAt]
+
+    FormDetail:
+      allOf:
+        - $ref: "#/components/schemas/Form"
+        - type: object
+          properties:
+            fields:
+              type: array
+              items: { $ref: "#/components/schemas/FormField" }
+          required: [fields]
+
+    CreateFormBody:
+      type: object
+      properties:
+        title: { type: string }
+        description: { type: string, nullable: true }
+        sessionId: { type: string, nullable: true }
+        fields:
+          type: array
+          items: { $ref: "#/components/schemas/FormField" }
+      required: [title, fields]
+
+    FormResponse:
+      type: object
+      properties:
+        id: { type: string }
+        formId: { type: string }
+        userId: { type: string }
+        userName: { type: string, nullable: true }
+        values:
+          type: object
+          additionalProperties: true
+        createdAt: { type: string }
+      required: [id, formId, userId, values, createdAt]
+
+    SubmitFormResponseBody:
+      type: object
+      properties:
+        values:
+          type: object
+          additionalProperties: true
+      required: [values]
+
+    NotificationLevel:
+      type: string
+      enum: [info, warning, emergency]
+
+    Notification:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        body: { type: string }
+        level: { $ref: "#/components/schemas/NotificationLevel" }
+        createdAt: { type: string }
+        creatorId: { type: string }
+        creatorName: { type: string, nullable: true }
+      required: [id, title, body, level, createdAt, creatorId]
+
+    CreateNotificationBody:
+      type: object
+      properties:
+        title: { type: string }
+        body: { type: string }
+        level: { $ref: "#/components/schemas/NotificationLevel" }
+      required: [title, body, level]
+
+    TrackBreakdown:
+      type: object
+      properties:
+        track: { $ref: "#/components/schemas/Track" }
+        sessionCount: { type: integer }
+        registeredCount: { type: integer }
+      required: [track, sessionCount, registeredCount]
+
+    DashboardSummary:
+      type: object
+      properties:
+        totalSessions: { type: integer }
+        totalAttendees: { type: integer }
+        totalCheckIns: { type: integer }
+        upcomingCount: { type: integer }
+        fullSessionsCount: { type: integer }
+        openTaskCount: { type: integer }
+        averageRating: { type: number }
+        unreadNotifications:
+          type: array
+          items: { $ref: "#/components/schemas/Notification" }
+        trackBreakdown:
+          type: array
+          items: { $ref: "#/components/schemas/TrackBreakdown" }
+        nextSessions:
+          type: array
+          items: { $ref: "#/components/schemas/Session" }
+      required: [totalSessions, totalAttendees, totalCheckIns, upcomingCount, fullSessionsCount, openTaskCount, averageRating, unreadNotifications, trackBreakdown, nextSessions]

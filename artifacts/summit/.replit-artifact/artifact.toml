@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Learning Summit"
+version = "1.0.0"
+id = "artifacts/summit"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19701
+
+[services.development]
+run = "pnpm --filter @workspace/summit run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/summit", "run", "build" ]
+publicDir = "artifacts/summit/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19701"
+BASE_PATH = "/"
