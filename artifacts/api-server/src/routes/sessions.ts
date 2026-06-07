@@ -13,24 +13,32 @@ const router: IRouter = Router();
 
 router.use(requireAuth);
 
-async function decorateSessions(rows: (typeof sessions.$inferSelect)[], userId: string) {
-  if (rows.length === 0) return [];
-  const ids: string[] = rows.map((r) => r.id);
-  const counts = await db
+async function getDecoratedSessions(userId: string, track?: string) {
+  const where = track && track !== "all" ? eq(sessions.track, track) : undefined;
+  
+  const query = db
     .select({
-      sessionId: registrations.sessionId,
-      count: sql<number>`count(*)::int`.as("count"),
+      id: sessions.id,
+      title: sessions.title,
+      description: sessions.description,
+      location: sessions.location,
+      room: sessions.room,
+      track: sessions.track,
+      mandatory: sessions.mandatory,
+      capacity: sessions.capacity,
+      startsAt: sessions.startsAt,
+      endsAt: sessions.endsAt,
+      organizers: sessions.organizers,
+      speakers: sessions.speakers,
+      tags: sessions.tags,
+      registeredCount: sql<number>`(SELECT COALESCE(COUNT(*), 0)::int FROM ${registrations} WHERE ${registrations.sessionId} = ${sessions.id})`.as("registered_count"),
+      isRegistered: sql<boolean>`EXISTS(SELECT 1 FROM ${registrations} WHERE ${registrations.sessionId} = ${sessions.id} AND ${registrations.userId} = ${userId})`.as("is_registered"),
     })
-    .from(registrations)
-    .where(inArray(registrations.sessionId, ids))
-    .groupBy(registrations.sessionId);
-  const myRegs = await db
-    .select({ sessionId: registrations.sessionId })
-    .from(registrations)
-    .where(eq(registrations.userId, userId));
+    .from(sessions);
 
-  const countMap = new Map(counts.map((c) => [c.sessionId, c.count]));
-  const myReg = new Set(myRegs.map((r) => r.sessionId));
+  const rows = where 
+    ? await query.where(where).orderBy(asc(sessions.startsAt))
+    : await query.orderBy(asc(sessions.startsAt));
 
   return rows.map((s) => ({
     id: s.id,
@@ -41,23 +49,62 @@ async function decorateSessions(rows: (typeof sessions.$inferSelect)[], userId: 
     track: s.track,
     mandatory: s.mandatory,
     capacity: s.capacity,
-    registeredCount: countMap.get(s.id) ?? 0,
+    registeredCount: s.registeredCount,
     startsAt: s.startsAt.toISOString(),
     endsAt: s.endsAt.toISOString(),
     organizers: s.organizers ?? [],
     speakers: s.speakers ?? [],
     tags: s.tags ?? [],
-    isRegistered: myReg.has(s.id),
+    isRegistered: !!s.isRegistered,
   }));
+}
+
+async function getDecoratedSessionById(sessionId: string, userId: string) {
+  const [row] = await db
+    .select({
+      id: sessions.id,
+      title: sessions.title,
+      description: sessions.description,
+      location: sessions.location,
+      room: sessions.room,
+      track: sessions.track,
+      mandatory: sessions.mandatory,
+      capacity: sessions.capacity,
+      startsAt: sessions.startsAt,
+      endsAt: sessions.endsAt,
+      organizers: sessions.organizers,
+      speakers: sessions.speakers,
+      tags: sessions.tags,
+      registeredCount: sql<number>`(SELECT COALESCE(COUNT(*), 0)::int FROM ${registrations} WHERE ${registrations.sessionId} = ${sessions.id})`.as("registered_count"),
+      isRegistered: sql<boolean>`EXISTS(SELECT 1 FROM ${registrations} WHERE ${registrations.sessionId} = ${sessions.id} AND ${registrations.userId} = ${userId})`.as("is_registered"),
+    })
+    .from(sessions)
+    .where(eq(sessions.id, sessionId));
+
+  if (!row) return null;
+
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    location: row.location,
+    room: row.room,
+    track: row.track,
+    mandatory: row.mandatory,
+    capacity: row.capacity,
+    registeredCount: row.registeredCount,
+    startsAt: row.startsAt.toISOString(),
+    endsAt: row.endsAt.toISOString(),
+    organizers: row.organizers ?? [],
+    speakers: row.speakers ?? [],
+    tags: row.tags ?? [],
+    isRegistered: !!row.isRegistered,
+  };
 }
 
 router.get("/sessions", async (req, res) => {
   const { track } = ListSessionsQueryParams.parse(req.query);
-  const where = track && track !== "all" ? eq(sessions.track, track) : undefined;
-  const rows = where
-    ? await db.select().from(sessions).where(where).orderBy(asc(sessions.startsAt))
-    : await db.select().from(sessions).orderBy(asc(sessions.startsAt));
-  const out = await decorateSessions(rows, getUser(req).userId);
+  const out = await getDecoratedSessions(getUser(req).userId, track);
   res.json(out);
 });
 
@@ -84,29 +131,25 @@ router.post(
         createdBy: getUser(req).userId,
       })
       .returning();
-    const [decorated] = await decorateSessions([row], getUser(req).userId);
+    const decorated = await getDecoratedSessionById(row.id, getUser(req).userId);
     res.status(201).json(decorated);
   },
 );
 
 router.get("/sessions/:id", async (req, res) => {
   const id = String(req.params.id);
-  const [row] = await db.select().from(sessions).where(eq(sessions.id, id));
-  if (!row) { res.status(404).json({ error: "Not found" }); return; }
-  const [decorated] = await decorateSessions([row], getUser(req).userId);
-  const regs = await db
-    .select()
+  const decorated = await getDecoratedSessionById(id, getUser(req).userId);
+  if (!decorated) { res.status(404).json({ error: "Not found" }); return; }
+  const attendeesRows = await db
+    .select({ user: users })
     .from(registrations)
+    .innerJoin(users, eq(registrations.userId, users.id))
     .where(eq(registrations.sessionId, id));
-  const userIds = regs.map((r) => r.userId);
-  const attendees = userIds.length
-    ? await db.select().from(users).where(inArray(users.id, userIds))
-    : [];
   res.json({
     ...decorated,
-    attendees: attendees.map((u) => ({
-      ...u,
-      createdAt: u.createdAt.toISOString(),
+    attendees: attendeesRows.map((r) => ({
+      ...r.user,
+      createdAt: r.user.createdAt.toISOString(),
     })),
   });
 });
@@ -136,7 +179,7 @@ router.patch(
       .where(eq(sessions.id, id))
       .returning();
     if (!row) { res.status(404).json({ error: "Not found" }); return; }
-    const [decorated] = await decorateSessions([row], getUser(req).userId);
+    const decorated = await getDecoratedSessionById(row.id, getUser(req).userId);
     res.json(decorated);
   },
 );
@@ -153,37 +196,62 @@ router.delete(
 router.post("/sessions/:id/register", async (req, res) => {
   const userId = getUser(req).userId;
   const sid = String(req.params.id);
-  const [session] = await db.select().from(sessions).where(eq(sessions.id, sid));
-  if (!session) { res.status(404).json({ error: "Session not found" }); return; }
-
-  const [{ count }] = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(registrations)
-    .where(eq(registrations.sessionId, sid));
-  if (count >= session.capacity) {
-    res.status(409).json({ error: "Session is full" }); return;
-  }
 
   try {
-    const [row] = await db
-      .insert(registrations)
-      .values({ sessionId: sid, userId })
-      .returning();
-    res.json({
-      id: row.id,
-      sessionId: row.sessionId,
-      userId: row.userId,
-      createdAt: row.createdAt.toISOString(),
+    const result = await db.transaction(async (tx) => {
+      // 1. Lock the session row to prevent race conditions during registration
+      const [session] = await tx
+        .select({ capacity: sessions.capacity })
+        .from(sessions)
+        .where(eq(sessions.id, sid))
+        .for("update");
+
+      if (!session) {
+        return { status: 404, error: "Session not found" };
+      }
+
+      // 2. Fetch current registrations under lock
+      const [{ count }] = await tx
+        .select({ count: sql<number>`count(*)::int` })
+        .from(registrations)
+        .where(eq(registrations.sessionId, sid));
+
+      if (count >= session.capacity) {
+        return { status: 409, error: "Session is full" };
+      }
+
+      // 3. Insert registration record
+      const [row] = await tx
+        .insert(registrations)
+        .values({ sessionId: sid, userId })
+        .returning();
+
+      return { status: 200, data: row };
     });
-  } catch {
+
+    if (result.error || !result.data) {
+      res.status(result.status).json({ error: result.error || "Could not register" });
+      return;
+    }
+
+    res.json({
+      id: result.data.id,
+      sessionId: result.data.sessionId,
+      userId: result.data.userId,
+      createdAt: result.data.createdAt.toISOString(),
+    });
+  } catch (err) {
+    // If insertion failed, check if they are already registered
     const [existing] = await db
       .select()
       .from(registrations)
       .where(
         sql`${registrations.sessionId} = ${sid} AND ${registrations.userId} = ${userId}`,
       );
-    if (!existing)
-      res.status(500).json({ error: "Could not register" }); return;
+    if (!existing) {
+      res.status(500).json({ error: "Could not register" });
+      return;
+    }
     res.json({
       id: existing.id,
       sessionId: existing.sessionId,
@@ -272,19 +340,46 @@ router.get("/sessions/:id/attendance", async (req, res) => {
 
 router.get("/me/registrations", async (req, res) => {
   const userId = getUser(req).userId;
-  const myRegs = await db
-    .select({ sessionId: registrations.sessionId })
-    .from(registrations)
-    .where(eq(registrations.userId, userId));
-  const ids = myRegs.map((r) => r.sessionId);
-  const rows = ids.length
-    ? await db
-        .select()
-        .from(sessions)
-        .where(inArray(sessions.id, ids))
-        .orderBy(asc(sessions.startsAt))
-    : [];
-  const out = await decorateSessions(rows, userId);
+  const rows = await db
+    .select({
+      id: sessions.id,
+      title: sessions.title,
+      description: sessions.description,
+      location: sessions.location,
+      room: sessions.room,
+      track: sessions.track,
+      mandatory: sessions.mandatory,
+      capacity: sessions.capacity,
+      startsAt: sessions.startsAt,
+      endsAt: sessions.endsAt,
+      organizers: sessions.organizers,
+      speakers: sessions.speakers,
+      tags: sessions.tags,
+      registeredCount: sql<number>`(SELECT COALESCE(COUNT(*), 0)::int FROM ${registrations} WHERE ${registrations.sessionId} = ${sessions.id})`.as("registered_count"),
+      isRegistered: sql<boolean>`true`.as("is_registered"),
+    })
+    .from(sessions)
+    .innerJoin(registrations, eq(sessions.id, registrations.sessionId))
+    .where(eq(registrations.userId, userId))
+    .orderBy(asc(sessions.startsAt));
+
+  const out = rows.map((s) => ({
+    id: s.id,
+    title: s.title,
+    description: s.description,
+    location: s.location,
+    room: s.room,
+    track: s.track,
+    mandatory: s.mandatory,
+    capacity: s.capacity,
+    registeredCount: s.registeredCount,
+    startsAt: s.startsAt.toISOString(),
+    endsAt: s.endsAt.toISOString(),
+    organizers: s.organizers ?? [],
+    speakers: s.speakers ?? [],
+    tags: s.tags ?? [],
+    isRegistered: true,
+  }));
   res.json(out);
 });
 
