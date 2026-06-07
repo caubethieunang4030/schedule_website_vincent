@@ -29,6 +29,21 @@ export async function requireAuth(
   res: Response,
   next: NextFunction,
 ): Promise<void> {
+  // Bỏ qua xác thực nếu chạy local không có Clerk Key
+  if (!process.env.CLERK_PUBLISHABLE_KEY) {
+    const testUserId = "seed-org"; // Sử dụng tài khoản organizer từ seed script
+    const [user] = await db.select().from(users).where(eq(users.id, testUserId));
+    if (user) {
+      authStates.set(req, {
+        userId: user.id,
+        userRole: user.role,
+        userEmail: user.email,
+      });
+      next();
+      return;
+    }
+  }
+
   const auth = getAuth(req);
   const userId = auth?.userId;
   if (!userId) {
