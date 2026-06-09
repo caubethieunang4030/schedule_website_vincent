@@ -105,7 +105,7 @@ export default function AdminFeedback() {
                   <div className="text-right">
                     <div className="flex items-center gap-2">
                       <span className="text-2xl font-semibold">
-                        {s.averageRating.toFixed(1)}
+                        {(s.averageRating || 0).toFixed(1)}
                       </span>
                       <Stars value={s.averageRating} />
                     </div>

@@ -326,7 +326,7 @@ export default function SessionDetail() {
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold flex items-center gap-2">
                     <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                    {feedbackData.averageRating.toFixed(1)} Average ({feedbackData.count} reviews)
+                    {(feedbackData.averageRating || 0).toFixed(1)} Average ({feedbackData.count} reviews)
                   </h3>
                   <div className="space-y-4">
                     {feedbackData.items.map(fb => (

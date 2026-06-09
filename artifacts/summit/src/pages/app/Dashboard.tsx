@@ -41,7 +41,7 @@ export default function Dashboard() {
     { label: "Check-ins", value: summary.totalCheckIns, icon: CheckSquare, color: "text-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-900/20" },
     { label: "Upcoming", value: summary.upcomingCount, icon: Calendar, color: "text-amber-500", bg: "bg-amber-50 dark:bg-amber-900/20" },
     { label: "Full Sessions", value: summary.fullSessionsCount, icon: Users, color: "text-rose-500", bg: "bg-rose-50 dark:bg-rose-900/20" },
-    { label: "Avg Rating", value: summary.averageRating.toFixed(1), icon: Star, color: "text-yellow-500", bg: "bg-yellow-50 dark:bg-yellow-900/20" },
+    { label: "Avg Rating", value: (summary.averageRating || 0).toFixed(1), icon: Star, color: "text-yellow-500", bg: "bg-yellow-50 dark:bg-yellow-900/20" },
   ];
 
   const emergencyNotifications = summary.unreadNotifications?.filter(n => n.level === "emergency") || [];
