@@ -6,7 +6,10 @@
     "preinstall": "echo \"Skipping preinstall\"",
     "build": "pnpm run typecheck && pnpm -r --if-present run build",
     "typecheck:libs": "tsc --build",
-    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
+    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck",
+    "dev:services": "pnpm --filter @workspace/api-gateway --filter @workspace/*-service --parallel run dev",
+    "dev:frontend": "pnpm --filter @workspace/summit run dev",
+    "dev": "pnpm --filter @workspace/api-gateway --filter @workspace/*-service --filter @workspace/summit --parallel run dev"
   },
   "private": true,
   "devDependencies": {
