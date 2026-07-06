@@ -6,8 +6,11 @@ import { eq } from "drizzle-orm";
 const ALLOWED_DOMAINS = [".edu", ".org"];
 
 function isSchoolEmail(email: string): boolean {
-  const lower = email.toLowerCase();
-  return ALLOWED_DOMAINS.some((d) => lower.endsWith(d));
+  if (!email) return false;
+  const parts = email.split("@");
+  if (parts.length !== 2) return false;
+  const domain = parts[1].toLowerCase();
+  return ALLOWED_DOMAINS.some((d) => domain.endsWith(d));
 }
 
 interface AuthState {

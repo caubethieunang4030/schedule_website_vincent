@@ -9,9 +9,10 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { LogOut, Save, Shield, User as UserIcon } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Role, Track } from "@workspace/api-client-react";
+import { simpleHash } from "@/lib/utils";
 
 export default function Profile() {
   const { data: me, isLoading } = useGetMe();
@@ -56,7 +57,20 @@ export default function Profile() {
   }
 
   const initials = `${me.firstName?.[0] || ''}${me.lastName?.[0] || ''}` || me.email[0].toUpperCase();
-  const qrData = JSON.stringify({ userId: me.id, name: `${me.firstName} ${me.lastName}` });
+
+  const [qrTimestamp, setQrTimestamp] = useState(Date.now());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setQrTimestamp(Date.now());
+    }, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const qrData = useMemo(() => {
+    const signature = simpleHash(me.id + qrTimestamp + "VINCENT_QR_SECRET_SALT");
+    return JSON.stringify({ userId: me.id, ts: qrTimestamp, signature });
+  }, [me.id, qrTimestamp]);
 
   return (
     <div className="space-y-8 pb-10 max-w-5xl">

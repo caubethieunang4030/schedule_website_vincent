@@ -13,6 +13,7 @@ router.post(
   requireRole("faculty", "organizer", "admin"),
   controller.createSession.bind(controller)
 );
+router.get("/sessions/export/calendar", controller.exportCalendar.bind(controller));
 router.get("/sessions/:id", controller.getSessionById.bind(controller));
 router.patch(
   "/sessions/:id",

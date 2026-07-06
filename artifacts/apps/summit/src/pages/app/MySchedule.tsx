@@ -50,12 +50,20 @@ export default function MySchedule() {
           <h1 className="text-3xl font-semibold tracking-tight">My Schedule</h1>
           <p className="text-muted-foreground text-lg">Your personalized agenda for the summit.</p>
         </div>
-        <Button asChild>
-          <Link href="/app/schedule">
-            <Plus className="w-4 h-4 mr-2" />
-            Add Sessions
-          </Link>
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          {registrations && (registrations as any[]).length > 0 && (
+            <Button variant="outline" onClick={() => window.open("/api/sessions/export/calendar", "_blank")}>
+              <Calendar className="w-4 h-4 mr-2" />
+              Sync to Calendar
+            </Button>
+          )}
+          <Button asChild>
+            <Link href="/app/schedule">
+              <Plus className="w-4 h-4 mr-2" />
+              Add Sessions
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (

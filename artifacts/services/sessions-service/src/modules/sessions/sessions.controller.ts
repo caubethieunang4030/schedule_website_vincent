@@ -6,7 +6,17 @@ import {
   UpdateSessionBody,
   ListSessionsQueryParams,
 } from "@workspace/api-zod";
+import { createEvents, type EventAttributes } from "ics";
 import { getUser } from "../../lib/auth";
+
+function simpleHash(str: string): string {
+  let hash = 2166136261;
+  for (let i = 0; i < str.length; i++) {
+    hash ^= str.charCodeAt(i);
+    hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+  }
+  return (hash >>> 0).toString(16);
+}
 
 async function getDecoratedSessions(userId: string, track?: string) {
   const where = track && track !== "all" ? eq(sessions.track, track) : undefined;
@@ -290,9 +300,61 @@ export class SessionsController {
 
   public async checkinSession(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const userId = getUser(req).userId;
+      const authUser = getUser(req);
       const sid = String(req.params.id);
       const method = req.body?.method === "room" ? "room" : "qr";
+      
+      let userId: string;
+      if (method === "qr") {
+        // Enforce permissions: Only faculty, organizer, or admin can scan QR codes to check in others
+        if (
+          authUser.userRole !== "faculty" &&
+          authUser.userRole !== "organizer" &&
+          authUser.userRole !== "admin"
+        ) {
+          res.status(403).json({ error: "Forbidden - Only faculty, organizers, or admins can scan QR codes to check in attendees" });
+          return;
+        }
+        
+        const studentId = req.body?.code;
+        const ts = Number(req.body?.ts);
+        const signature = req.body?.signature;
+        const qrSessionId = req.body?.sessionId;
+
+        if (!studentId || !ts || !signature) {
+          res.status(400).json({ error: "Invalid QR code payload" });
+          return;
+        }
+
+        // 1. Verify dynamic signature
+        let expectedSignature: string;
+        if (qrSessionId) {
+          if (qrSessionId !== sid) {
+            res.status(400).json({ error: "QR code belongs to a different session" });
+            return;
+          }
+          expectedSignature = simpleHash(studentId + sid + ts + "VINCENT_QR_SECRET_SALT");
+        } else {
+          expectedSignature = simpleHash(studentId + ts + "VINCENT_QR_SECRET_SALT");
+        }
+
+        if (signature !== expectedSignature) {
+          res.status(400).json({ error: "Invalid or forged QR code signature" });
+          return;
+        }
+
+        // 2. Verify timestamp freshness (allow max 20 seconds difference to account for network lag)
+        if (Math.abs(Date.now() - ts) > 20000) {
+          res.status(400).json({ error: "QR code has expired. Please refresh the QR code." });
+          return;
+        }
+        
+        userId = studentId;
+      } else {
+        // Self-check-in using room method
+        userId = authUser.userId;
+      }
+
       const [session] = await db.select().from(sessions).where(eq(sessions.id, sid));
       if (!session) {
         res.status(404).json({ error: "Session not found" });
@@ -412,6 +474,69 @@ export class SessionsController {
         isRegistered: true,
       }));
       res.json(out);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  public async exportCalendar(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const userId = getUser(req).userId;
+      const rows = await db
+        .select({
+          id: sessions.id,
+          title: sessions.title,
+          description: sessions.description,
+          location: sessions.location,
+          room: sessions.room,
+          startsAt: sessions.startsAt,
+          endsAt: sessions.endsAt,
+        })
+        .from(sessions)
+        .innerJoin(registrations, eq(sessions.id, registrations.sessionId))
+        .where(eq(registrations.userId, userId))
+        .orderBy(asc(sessions.startsAt));
+
+      const events: EventAttributes[] = rows.map((s) => {
+        const start = new Date(s.startsAt);
+        const end = new Date(s.endsAt);
+        return {
+          start: [
+            start.getFullYear(),
+            start.getMonth() + 1,
+            start.getDate(),
+            start.getHours(),
+            start.getMinutes(),
+          ],
+          end: [
+            end.getFullYear(),
+            end.getMonth() + 1,
+            end.getDate(),
+            end.getHours(),
+            end.getMinutes(),
+          ],
+          title: s.title,
+          description: s.description ?? "Learning Summit Session",
+          location: s.room ? `${s.room} (${s.location ?? ""})` : (s.location ?? "Online"),
+        };
+      });
+
+      if (events.length === 0) {
+        res.setHeader("Content-Type", "text/calendar");
+        res.setHeader("Content-Disposition", 'attachment; filename="summit-schedule.ics"');
+        res.send("BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Our Calendar//EN\nEND:VCALENDAR");
+        return;
+      }
+
+      createEvents(events, (error, value) => {
+        if (error) {
+          res.status(500).json({ error: "Failed to generate calendar file" });
+          return;
+        }
+        res.setHeader("Content-Type", "text/calendar");
+        res.setHeader("Content-Disposition", 'attachment; filename="summit-schedule.ics"');
+        res.send(value);
+      });
     } catch (error) {
       next(error);
     }

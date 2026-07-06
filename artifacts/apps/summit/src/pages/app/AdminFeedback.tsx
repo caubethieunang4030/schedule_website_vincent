@@ -2,8 +2,9 @@ import { Link } from "wouter";
 import { useGetFeedbackAggregate } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Star, MessageSquareOff } from "lucide-react";
+import { Star, MessageSquareOff, Download } from "lucide-react";
 import { format } from "date-fns";
+import { Button } from "@/components/ui/button";
 
 const trackTone: Record<string, string> = {
   lower:
@@ -46,15 +47,63 @@ function Stars({ value }: { value: number }) {
 export default function AdminFeedback() {
   const { data, isLoading } = useGetFeedbackAggregate();
 
+  const handleExport = async () => {
+    if (!data) return;
+    const XLSX = await import("xlsx");
+    
+    // Flat rows for session feedback aggregates
+    const rows = data.map((s) => ({
+      "Session ID": s.sessionId,
+      "Session Title": s.sessionTitle,
+      "Track": trackLabel(s.track),
+      "Start Time": format(new Date(s.startsAt), "yyyy-MM-dd HH:mm"),
+      "Average Rating": Number((s.averageRating || 0).toFixed(2)),
+      "Response Count": s.count,
+    }));
+
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Feedback Aggregate");
+
+    // Flat rows for recent comments
+    const commentRows: any[] = [];
+    data.forEach((s) => {
+      s.recentComments.forEach((c) => {
+        commentRows.push({
+          "Session Title": s.sessionTitle,
+          "Track": trackLabel(s.track),
+          "User": c.userName ?? "Anonymous",
+          "Rating": c.rating,
+          "Comment": c.comment,
+          "Created At": format(new Date(c.createdAt), "yyyy-MM-dd HH:mm"),
+        });
+      });
+    });
+
+    if (commentRows.length > 0) {
+      const commentsWorksheet = XLSX.utils.json_to_sheet(commentRows);
+      XLSX.utils.book_append_sheet(workbook, commentsWorksheet, "Recent Comments");
+    }
+
+    XLSX.writeFile(workbook, `Feedback_Report_${Date.now()}.xlsx`);
+  };
+
   return (
     <div className="space-y-8 pb-10">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-semibold tracking-tight">
-          Feedback overview
-        </h1>
-        <p className="text-muted-foreground text-lg">
-          Average ratings, response counts, and recent comments per session.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-semibold tracking-tight">
+            Feedback overview
+          </h1>
+          <p className="text-muted-foreground text-lg">
+            Average ratings, response counts, and recent comments per session.
+          </p>
+        </div>
+        {data && data.length > 0 && (
+          <Button onClick={handleExport} variant="outline">
+            <Download className="w-4 h-4 mr-2" /> Export Excel
+          </Button>
+        )}
       </div>
 
       {isLoading ? (

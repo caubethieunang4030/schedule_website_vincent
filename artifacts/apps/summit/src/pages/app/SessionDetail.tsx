@@ -17,9 +17,10 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Html5Qrcode } from "html5-qrcode";
+import { simpleHash } from "@/lib/utils";
 
 import { 
   ArrowLeft, Calendar, Clock, MapPin, Users, CheckCircle, 
@@ -136,9 +137,18 @@ export default function SessionDetail() {
               const res = await fetch(`/api/sessions/${id}/checkin`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ method: "qr", code: data.userId }),
+                body: JSON.stringify({ 
+                  method: "qr", 
+                  code: data.userId,
+                  ts: data.ts,
+                  signature: data.signature,
+                  sessionId: data.sessionId
+                }),
               });
-              if (!res.ok) throw new Error("Check-in failed on server");
+              if (!res.ok) {
+                const errJson = await res.json().catch(() => ({}));
+                throw new Error(errJson.error || "Check-in failed on server");
+              }
               toast({ title: "Attendee checked in via QR!" });
             } else {
               throw new Error("Invalid QR code format");
@@ -193,7 +203,21 @@ export default function SessionDetail() {
   const isFull = session.registeredCount >= session.capacity;
   const progress = (session.registeredCount / session.capacity) * 100;
   const canScan = me?.role === "faculty" || me?.role === "organizer" || me?.role === "admin";
-  const myQrData = JSON.stringify({ sessionId: session.id, userId: me?.id, ts: Date.now() });
+  
+  const [qrTimestamp, setQrTimestamp] = useState(Date.now());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setQrTimestamp(Date.now());
+    }, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const myQrData = useMemo(() => {
+    if (!session || !me) return "";
+    const signature = simpleHash(me.id + session.id + qrTimestamp + "VINCENT_QR_SECRET_SALT");
+    return JSON.stringify({ userId: me.id, sessionId: session.id, ts: qrTimestamp, signature });
+  }, [me?.id, session?.id, qrTimestamp]);
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-10">
