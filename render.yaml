@@ -1,0 +1,167 @@
+services:
+  # ============================================================================
+  # 1. API GATEWAY
+  # ============================================================================
+  - type: web
+    name: api-gateway
+    env: node
+    plan: starter
+    buildCommand: pnpm install && pnpm --filter @workspace/api-gateway build
+    startCommand: pnpm --filter @workspace/api-gateway start
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: USERS_SERVICE_URL
+        fromService:
+          type: web
+          name: users-service
+          property: host
+      - key: SESSIONS_SERVICE_URL
+        fromService:
+          type: web
+          name: sessions-service
+          property: host
+      - key: FEEDBACK_SERVICE_URL
+        fromService:
+          type: web
+          name: feedback-service
+          property: host
+      - key: TASKS_SERVICE_URL
+        fromService:
+          type: web
+          name: tasks-service
+          property: host
+      - key: NOTIFICATIONS_SERVICE_URL
+        fromService:
+          type: web
+          name: notifications-service
+          property: host
+
+  # ============================================================================
+  # 2. USERS SERVICE (Port 8081)
+  # ============================================================================
+  - type: web
+    name: users-service
+    env: node
+    plan: starter
+    buildCommand: pnpm install && pnpm --filter @workspace/users-service build
+    startCommand: pnpm --filter @workspace/users-service start
+    envVars:
+      - key: PORT
+        value: 8081
+      - key: DATABASE_URL
+        fromDatabase:
+          name: summit-postgres
+          property: connectionString
+      - key: CLERK_SECRET_KEY
+        sync: false
+      - key: CLERK_PUBLISHABLE_KEY
+        sync: false
+
+  # ============================================================================
+  # 3. SESSIONS SERVICE (Port 8082)
+  # ============================================================================
+  - type: web
+    name: sessions-service
+    env: node
+    plan: starter
+    buildCommand: pnpm install && pnpm --filter @workspace/sessions-service build
+    startCommand: pnpm --filter @workspace/sessions-service start
+    envVars:
+      - key: PORT
+        value: 8082
+      - key: DATABASE_URL
+        fromDatabase:
+          name: summit-postgres
+          property: connectionString
+      - key: CLERK_SECRET_KEY
+        sync: false
+      - key: CLERK_PUBLISHABLE_KEY
+        sync: false
+
+  # ============================================================================
+  # 4. FEEDBACK SERVICE (Port 8083)
+  # ============================================================================
+  - type: web
+    name: feedback-service
+    env: node
+    plan: starter
+    buildCommand: pnpm install && pnpm --filter @workspace/feedback-service build
+    startCommand: pnpm --filter @workspace/feedback-service start
+    envVars:
+      - key: PORT
+        value: 8083
+      - key: DATABASE_URL
+        fromDatabase:
+          name: summit-postgres
+          property: connectionString
+      - key: CLERK_SECRET_KEY
+        sync: false
+      - key: CLERK_PUBLISHABLE_KEY
+        sync: false
+
+  # ============================================================================
+  # 5. TASKS SERVICE (Port 8084)
+  # ============================================================================
+  - type: web
+    name: tasks-service
+    env: node
+    plan: starter
+    buildCommand: pnpm install && pnpm --filter @workspace/tasks-service build
+    startCommand: pnpm --filter @workspace/tasks-service start
+    envVars:
+      - key: PORT
+        value: 8084
+      - key: DATABASE_URL
+        fromDatabase:
+          name: summit-postgres
+          property: connectionString
+      - key: CLERK_SECRET_KEY
+        sync: false
+      - key: CLERK_PUBLISHABLE_KEY
+        sync: false
+
+  # ============================================================================
+  # 6. NOTIFICATIONS SERVICE (Port 8085)
+  # ============================================================================
+  - type: web
+    name: notifications-service
+    env: node
+    plan: starter
+    buildCommand: pnpm install && pnpm --filter @workspace/notifications-service build
+    startCommand: pnpm --filter @workspace/notifications-service start
+    envVars:
+      - key: PORT
+        value: 8085
+      - key: DATABASE_URL
+        fromDatabase:
+          name: summit-postgres
+          property: connectionString
+      - key: CLERK_SECRET_KEY
+        sync: false
+      - key: CLERK_PUBLISHABLE_KEY
+        sync: false
+
+  # ============================================================================
+  # 7. FRONTEND CLIENT (Static Site)
+  # ============================================================================
+  - type: static
+    name: summit-frontend
+    buildCommand: pnpm install && pnpm --filter @workspace/summit build
+    publishDir: artifacts/apps/summit/dist/public
+    envVars:
+      - key: VITE_CLERK_PUBLISHABLE_KEY
+        sync: false
+      # Routing rule to fallback on index.html for SPA (Single Page Application) routing
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+# ============================================================================
+# 8. DATABASE POSTGRESQL
+# ============================================================================
+databases:
+  - name: summit-postgres
+    plan: flexible
+    postgresVersion: 15
