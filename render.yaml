@@ -145,10 +145,11 @@ services:
   # ============================================================================
   # 7. FRONTEND CLIENT (Static Site)
   # ============================================================================
-  - type: static
+  - type: web
     name: summit-frontend
+    runtime: static
     buildCommand: pnpm install && pnpm --filter @workspace/summit build
-    publishDir: artifacts/apps/summit/dist/public
+    staticPublishPath: artifacts/apps/summit/dist/public
     envVars:
       - key: VITE_CLERK_PUBLISHABLE_KEY
         sync: false
