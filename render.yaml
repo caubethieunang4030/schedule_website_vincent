@@ -164,5 +164,5 @@ services:
 # ============================================================================
 databases:
   - name: summit-postgres
-    plan: flexible
+    plan: free
     postgresMajorVersion: "15"
