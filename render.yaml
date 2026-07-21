@@ -4,7 +4,7 @@ services:
   # ============================================================================
   - type: web
     name: api-gateway
-    env: node
+    runtime: node
     plan: starter
     buildCommand: pnpm install && pnpm --filter @workspace/api-gateway build
     startCommand: pnpm --filter @workspace/api-gateway start
@@ -42,7 +42,7 @@ services:
   # ============================================================================
   - type: web
     name: users-service
-    env: node
+    runtime: node
     plan: starter
     buildCommand: pnpm install && pnpm --filter @workspace/users-service build
     startCommand: pnpm --filter @workspace/users-service start
@@ -63,7 +63,7 @@ services:
   # ============================================================================
   - type: web
     name: sessions-service
-    env: node
+    runtime: node
     plan: starter
     buildCommand: pnpm install && pnpm --filter @workspace/sessions-service build
     startCommand: pnpm --filter @workspace/sessions-service start
@@ -84,7 +84,7 @@ services:
   # ============================================================================
   - type: web
     name: feedback-service
-    env: node
+    runtime: node
     plan: starter
     buildCommand: pnpm install && pnpm --filter @workspace/feedback-service build
     startCommand: pnpm --filter @workspace/feedback-service start
@@ -105,7 +105,7 @@ services:
   # ============================================================================
   - type: web
     name: tasks-service
-    env: node
+    runtime: node
     plan: starter
     buildCommand: pnpm install && pnpm --filter @workspace/tasks-service build
     startCommand: pnpm --filter @workspace/tasks-service start
@@ -126,7 +126,7 @@ services:
   # ============================================================================
   - type: web
     name: notifications-service
-    env: node
+    runtime: node
     plan: starter
     buildCommand: pnpm install && pnpm --filter @workspace/notifications-service build
     startCommand: pnpm --filter @workspace/notifications-service start
@@ -165,4 +165,4 @@ services:
 databases:
   - name: summit-postgres
     plan: flexible
-    postgresVersion: 15
+    postgresMajorVersion: "15"
