@@ -1,7 +1,13 @@
 import { Link } from "wouter";
-import { Users, MessageSquare, ListTodo, Bell, CalendarDays } from "lucide-react";
+import { Users, MessageSquare, ListTodo, Bell, CalendarDays, UserCheck } from "lucide-react";
 
 const tiles = [
+  {
+    href: "/app/admin/attendance",
+    label: "Điểm Danh Pi 5",
+    desc: "Xem nhật ký điểm danh nhân viên từ Pi 5 và xuất file Excel/CSV.",
+    icon: UserCheck,
+  },
   {
     href: "/app/admin/students",
     label: "Students",

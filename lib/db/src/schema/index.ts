@@ -98,18 +98,19 @@ export const attendance = pgTable(
   {
     id: cuid(),
     sessionId: text("session_id")
-      .notNull()
       .references(() => sessions.id, { onDelete: "cascade" }),
     userId: text("user_id")
-      .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    method: text("method").notNull().default("qr"), // qr | room
+    userCode: text("user_code"),
+    type: text("type").notNull().default("VAO"), // VAO | RA
+    deviceId: text("device_id").notNull().default("pi5"),
+    method: text("method").notNull().default("qr"), // qr | room | pi5_face
     checkedInAt: timestamp("checked_in_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
   },
   (t) => ({
-    uniq: uniqueIndex("attendance_session_user_idx").on(t.sessionId, t.userId),
+    checkedInIdx: index("attendance_checked_in_idx").on(t.checkedInAt),
   }),
 );
 

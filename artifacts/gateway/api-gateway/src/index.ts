@@ -59,6 +59,14 @@ app.use(
 );
 
 app.use(
+  "/api/attendance",
+  createProxyMiddleware({
+    target: "http://localhost:8082/api/attendance",
+    changeOrigin: true,
+  })
+);
+
+app.use(
   "/api/sessions",
   createProxyMiddleware({
     target: "http://localhost:8082/api/sessions",

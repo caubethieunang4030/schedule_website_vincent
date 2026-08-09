@@ -30,6 +30,7 @@ import AdminHome from "./app/AdminHome";
 import AdminStudents from "./app/AdminStudents";
 import AdminFeedback from "./app/AdminFeedback";
 import AdminSessions from "./app/AdminSessions";
+import AdminAttendance from "./app/AdminAttendance";
 
 const ADMIN_ROLES = ["faculty", "organizer", "admin"];
 
@@ -129,6 +130,9 @@ export default function AppShell() {
           <Route path="/app/forms/:id" component={FormView} />
           <Route path="/app/forms" component={FormsList} />
           <Route path="/app/notifications" component={Notifications} />
+          {isAdmin && (
+            <Route path="/app/admin/attendance" component={AdminAttendance} />
+          )}
           {isAdmin && (
             <Route path="/app/admin/students" component={AdminStudents} />
           )}
