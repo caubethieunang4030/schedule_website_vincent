@@ -34,6 +34,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function SessionDetail() {
   const { id } = useParams<{ id: string }>();
@@ -219,6 +227,22 @@ export default function SessionDetail() {
     return JSON.stringify({ userId: me.id, sessionId: session.id, ts: qrTimestamp, signature });
   }, [me?.id, session?.id, qrTimestamp]);
 
+  const isPresenter = useMemo(() => {
+    if (!session || !me) return false;
+    if ((session as any).createdBy === me.id) return true;
+    if (session.organizers?.includes(me.id)) return true;
+    if (["faculty", "organizer", "admin"].includes(me.role ?? "")) return true;
+    const myName = [me.firstName, me.lastName].filter(Boolean).join(" ").toLowerCase();
+    const myEmail = me.email?.toLowerCase() || "";
+    return (session.speakers ?? []).some((s) => {
+      const sName = s.name.toLowerCase();
+      const sBio = (s.bio || "").toLowerCase();
+      return (myName && sName.includes(myName)) || (myEmail && sBio.includes(myEmail));
+    });
+  }, [session, me]);
+
+  const [showProjectionModal, setShowProjectionModal] = useState(false);
+
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-10">
       <div>
@@ -234,6 +258,11 @@ export default function SessionDetail() {
                 {session.track.charAt(0).toUpperCase() + session.track.slice(1)} Track
               </Badge>
               {session.mandatory && <Badge variant="destructive">Mandatory</Badge>}
+              {isPresenter && (
+                <Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-200">
+                  Diễn giả / Presenter
+                </Badge>
+              )}
             </div>
             <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{session.title}</h1>
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-lg text-muted-foreground pt-2">
@@ -252,7 +281,17 @@ export default function SessionDetail() {
             </div>
           </div>
           
-          <div className="flex flex-col gap-2 min-w-[200px]">
+          <div className="flex flex-col gap-2 min-w-[220px]">
+            {isPresenter && (
+              <Button
+                size="lg"
+                className="bg-amber-600 hover:bg-amber-700 text-white font-medium shadow-md transition-all"
+                onClick={() => setShowProjectionModal(true)}
+              >
+                <ScanLine className="w-5 h-5 mr-2" /> Trình Chiếu Mã QR Điểm Danh
+              </Button>
+            )}
+
             {session.isRegistered ? (
               <Button size="lg" variant="secondary" onClick={handleUnregister} disabled={unregister.isPending} className="w-full">
                 <CheckCircle className="w-5 h-5 mr-2 text-green-500" />
@@ -274,6 +313,56 @@ export default function SessionDetail() {
           </div>
         </div>
       </div>
+
+      {/* Full-Screen Projector QR Modal for Presenters */}
+      <Dialog open={showProjectionModal} onOpenChange={setShowProjectionModal}>
+        <DialogContent className="max-w-4xl p-8 bg-slate-950 text-slate-50 border-slate-800">
+          <DialogHeader className="space-y-2 text-center">
+            <Badge className="w-fit mx-auto bg-amber-500/20 text-amber-300 border-amber-500/30">
+              MÀN HÌNH TRÌNH CHIẾU DÀNH CHO DIỄN GIẢ
+            </Badge>
+            <DialogTitle className="text-3xl font-bold tracking-tight text-white">
+              {session.title}
+            </DialogTitle>
+            <DialogDescription className="text-slate-400 text-base">
+              Phòng: <strong className="text-slate-200">{session.room}</strong> | Thời gian: {format(parseISO(session.startsAt), "HH:mm")} - {format(parseISO(session.endsAt), "HH:mm")}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col items-center justify-center py-6 space-y-6">
+            <div className="bg-white p-6 rounded-3xl shadow-2xl border-4 border-amber-400">
+              <QRCodeSVG value={`session_qr:${session.id}`} size={280} />
+            </div>
+            
+            <div className="text-center space-y-2 max-w-md">
+              <p className="text-xl font-medium text-amber-300">
+                📱 Học sinh ở dưới mở camera điện thoại quét mã QR này để điểm danh
+              </p>
+              <p className="text-sm text-slate-400">
+                Mã QR luôn mở. Số lượng học sinh tham gia sẽ cập nhật trực tiếp bên dưới.
+              </p>
+            </div>
+
+            <div className="w-full bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center justify-around">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-emerald-400">{attendanceData?.length || 0}</div>
+                <div className="text-xs text-slate-400 uppercase tracking-wider mt-1">Đã điểm danh vào phòng</div>
+              </div>
+              <div className="h-8 w-px bg-slate-800" />
+              <div className="text-center">
+                <div className="text-3xl font-bold text-slate-200">{session.capacity}</div>
+                <div className="text-xs text-slate-400 uppercase tracking-wider mt-1">Sức chứa tối đa</div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="sm:justify-center">
+            <Button variant="outline" className="border-slate-700 text-slate-300 hover:bg-slate-900" onClick={() => setShowProjectionModal(false)}>
+              Thoát màn hình trình chiếu
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-6 border-t">
         <div className="md:col-span-2 space-y-8">

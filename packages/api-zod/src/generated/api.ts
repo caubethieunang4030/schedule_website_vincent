@@ -159,6 +159,40 @@ export const CreateSessionBody = zod.object({
   tags: zod.array(zod.string()).optional(),
 });
 
+/**
+ * @summary Bulk create sessions from Excel/CSV import
+ */
+export const CreateBulkSessionsBodyItem = zod.object({
+  title: zod.string(),
+  description: zod.string(),
+  location: zod.string(),
+  room: zod.string(),
+  track: zod.enum([
+    "lower",
+    "middle",
+    "upper",
+    "all",
+    "required_all",
+    "teachers",
+  ]),
+  mandatory: zod.boolean().optional(),
+  capacity: zod.number(),
+  startsAt: zod.string(),
+  endsAt: zod.string(),
+  organizers: zod.array(zod.string()).optional(),
+  speakers: zod
+    .array(
+      zod.object({
+        name: zod.string(),
+        title: zod.string().nullish(),
+        bio: zod.string().nullish(),
+      }),
+    )
+    .optional(),
+  tags: zod.array(zod.string()).optional(),
+});
+export const CreateBulkSessionsBody = zod.array(CreateBulkSessionsBodyItem);
+
 export const GetSessionParams = zod.object({
   id: zod.coerce.string(),
 });

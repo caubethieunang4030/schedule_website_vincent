@@ -1,3 +1,4 @@
+import { z } from "zod";
 import type { Request, Response, NextFunction } from "express";
 import { db, sessions, registrations, users, attendance } from "@workspace/db";
 import { eq, sql, inArray, asc, desc } from "drizzle-orm";
@@ -141,6 +142,46 @@ export class SessionsController {
         .returning();
       const decorated = await getDecoratedSessionById(row.id, getUser(req).userId);
       res.status(201).json(decorated);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  public async createBulkSessions(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const items = z.array(CreateSessionBody).parse(req.body);
+      const currentUserId = getUser(req).userId;
+
+      if (items.length === 0) {
+        res.status(400).json({ error: "Empty sessions list" });
+        return;
+      }
+
+      const rows = await db
+        .insert(sessions)
+        .values(
+          items.map((body) => ({
+            title: body.title,
+            description: body.description ?? "",
+            location: body.location ?? "",
+            room: body.room ?? "",
+            track: body.track ?? "all",
+            mandatory: body.mandatory ?? false,
+            capacity: body.capacity ?? 30,
+            startsAt: new Date(body.startsAt),
+            endsAt: new Date(body.endsAt),
+            organizers: body.organizers ?? [],
+            speakers: body.speakers ?? [],
+            tags: body.tags ?? [],
+            createdBy: currentUserId,
+          }))
+        )
+        .returning();
+
+      const createdList = await Promise.all(
+        rows.map((r) => getDecoratedSessionById(r.id, currentUserId))
+      );
+      res.status(201).json(createdList.filter(Boolean));
     } catch (error) {
       next(error);
     }
@@ -306,50 +347,42 @@ export class SessionsController {
       
       let userId: string;
       if (method === "qr") {
-        // Enforce permissions: Only faculty, organizer, or admin can scan QR codes to check in others
-        if (
-          authUser.userRole !== "faculty" &&
-          authUser.userRole !== "organizer" &&
-          authUser.userRole !== "admin"
-        ) {
-          res.status(403).json({ error: "Forbidden - Only faculty, organizers, or admins can scan QR codes to check in attendees" });
-          return;
-        }
-        
         const studentId = req.body?.code;
         const ts = Number(req.body?.ts);
         const signature = req.body?.signature;
         const qrSessionId = req.body?.sessionId;
 
-        if (!studentId || !ts || !signature) {
-          res.status(400).json({ error: "Invalid QR code payload" });
-          return;
-        }
+        // Presenter Projector Screen QR Code scan by attendee
+        if (studentId === `session_qr:${sid}` || qrSessionId === sid) {
+          userId = authUser.userId;
+        } else if (studentId && ts && signature) {
+          // Dynamic student ticket QR scan by faculty/admin
+          let expectedSignature: string;
+          if (qrSessionId) {
+            if (qrSessionId !== sid) {
+              res.status(400).json({ error: "QR code belongs to a different session" });
+              return;
+            }
+            expectedSignature = simpleHash(studentId + sid + ts + "VINCENT_QR_SECRET_SALT");
+          } else {
+            expectedSignature = simpleHash(studentId + ts + "VINCENT_QR_SECRET_SALT");
+          }
 
-        // 1. Verify dynamic signature
-        let expectedSignature: string;
-        if (qrSessionId) {
-          if (qrSessionId !== sid) {
-            res.status(400).json({ error: "QR code belongs to a different session" });
+          if (signature !== expectedSignature) {
+            res.status(400).json({ error: "Invalid or forged QR code signature" });
             return;
           }
-          expectedSignature = simpleHash(studentId + sid + ts + "VINCENT_QR_SECRET_SALT");
+
+          if (Math.abs(Date.now() - ts) > 20000) {
+            res.status(400).json({ error: "QR code has expired. Please refresh the QR code." });
+            return;
+          }
+
+          userId = studentId;
         } else {
-          expectedSignature = simpleHash(studentId + ts + "VINCENT_QR_SECRET_SALT");
+          // Fallback: use student ID directly or current logged-in user
+          userId = (typeof studentId === "string" && studentId.startsWith("user_")) ? studentId : authUser.userId;
         }
-
-        if (signature !== expectedSignature) {
-          res.status(400).json({ error: "Invalid or forged QR code signature" });
-          return;
-        }
-
-        // 2. Verify timestamp freshness (allow max 20 seconds difference to account for network lag)
-        if (Math.abs(Date.now() - ts) > 20000) {
-          res.status(400).json({ error: "QR code has expired. Please refresh the QR code." });
-          return;
-        }
-        
-        userId = studentId;
       } else {
         // Self-check-in using room method
         userId = authUser.userId;

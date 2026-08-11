@@ -19,6 +19,11 @@ router.post(
   requireRole("faculty", "organizer", "admin"),
   controller.createSession.bind(controller)
 );
+router.post(
+  "/sessions/bulk",
+  requireRole("faculty", "organizer", "admin"),
+  controller.createBulkSessions.bind(controller)
+);
 router.get("/sessions/export/calendar", controller.exportCalendar.bind(controller));
 router.get("/sessions/:id", controller.getSessionById.bind(controller));
 router.patch(

@@ -531,6 +531,92 @@ export const useCreateSession = <
   return useMutation(getCreateSessionMutationOptions(options));
 };
 
+/**
+ * @summary Bulk create sessions from Excel/CSV import
+ */
+export const getCreateBulkSessionsUrl = () => {
+  return `/api/sessions/bulk`;
+};
+
+export const createBulkSessions = async (
+  createSessionBody: CreateSessionBody[],
+  options?: RequestInit,
+): Promise<Session[]> => {
+  return customFetch<Session[]>(getCreateBulkSessionsUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createSessionBody),
+  });
+};
+
+export const getCreateBulkSessionsMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createBulkSessions>>,
+    TError,
+    { data: BodyType<CreateSessionBody[]> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createBulkSessions>>,
+  TError,
+  { data: BodyType<CreateSessionBody[]> },
+  TContext
+> => {
+  const mutationKey = ["createBulkSessions"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createBulkSessions>>,
+    { data: BodyType<CreateSessionBody[]> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createBulkSessions(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateBulkSessionsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createBulkSessions>>
+>;
+export type CreateBulkSessionsMutationBody = BodyType<CreateSessionBody[]>;
+export type CreateBulkSessionsMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Bulk create sessions from Excel/CSV import
+ */
+export const useCreateBulkSessions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createBulkSessions>>,
+    TError,
+    { data: BodyType<CreateSessionBody[]> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createBulkSessions>>,
+  TError,
+  { data: BodyType<CreateSessionBody[]> },
+  TContext
+> => {
+  return useMutation(getCreateBulkSessionsMutationOptions(options));
+};
+
 export const getGetSessionUrl = (id: string) => {
   return `/api/sessions/${id}`;
 };
