@@ -57,10 +57,10 @@ import { motion } from "framer-motion";
 const STATUSES = ["todo", "in_progress", "done", "blocked"] as const;
 type Status = (typeof STATUSES)[number];
 const STATUS_LABEL: Record<Status, string> = {
-  todo: "Cần làm",
-  in_progress: "Đang làm",
-  done: "Hoàn thành",
-  blocked: "Tạm hoãn",
+  todo: "To Do",
+  in_progress: "In Progress",
+  done: "Completed",
+  blocked: "Blocked",
 };
 const STATUS_TONE: Record<Status, string> = {
   todo: "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700",
@@ -72,9 +72,9 @@ const STATUS_TONE: Record<Status, string> = {
 };
 
 const CATEGORIES = [
-  { id: "all", label: "Tất cả công việc" },
-  { id: "daily_group_dump", label: "Bỏ việc cuối ngày (Group Dump)" },
-  { id: "personal_prep", label: "Chuẩn bị cá nhân" },
+  { id: "all", label: "All Tasks" },
+  { id: "daily_group_dump", label: "Daily Group Dump" },
+  { id: "personal_prep", label: "Personal Prep" },
 ] as const;
 
 function canManage(role?: string) {
@@ -120,8 +120,8 @@ export default function Tasks() {
   const handleCreateTask = async (categoryType = "general") => {
     if (!form.title.trim()) {
       toast({
-        title: "Thiếu thông tin",
-        description: "Vui lòng nhập tên công việc.",
+        title: "Missing Information",
+        description: "Please enter a task title.",
         variant: "destructive",
       });
       return;
@@ -147,7 +147,7 @@ export default function Tasks() {
         },
       });
       qc.invalidateQueries({ queryKey: getListTasksQueryKey() });
-      toast({ title: "Đã tạo công việc mới" });
+      toast({ title: "New task created successfully" });
       setOpen(false);
       setOpenDump(false);
       setForm({
@@ -162,7 +162,7 @@ export default function Tasks() {
       });
     } catch (e: any) {
       toast({
-        title: "Không thể tạo công việc",
+        title: "Could not create task",
         description: e?.message ?? "",
         variant: "destructive",
       });
@@ -175,7 +175,7 @@ export default function Tasks() {
       qc.invalidateQueries({ queryKey: getListTasksQueryKey() });
     } catch (e: any) {
       toast({
-        title: "Lỗi cập nhật",
+        title: "Update Error",
         description: e?.message ?? "",
         variant: "destructive",
       });
@@ -186,10 +186,10 @@ export default function Tasks() {
     try {
       await deleteTask.mutateAsync({ id });
       qc.invalidateQueries({ queryKey: getListTasksQueryKey() });
-      toast({ title: "Đã xóa công việc" });
+      toast({ title: "Task deleted successfully" });
     } catch (e: any) {
       toast({
-        title: "Lỗi xóa",
+        title: "Delete Error",
         description: e?.message ?? "",
         variant: "destructive",
       });
@@ -208,7 +208,7 @@ export default function Tasks() {
       qc.invalidateQueries({ queryKey: getListTasksQueryKey() });
     } catch (e: any) {
       toast({
-        title: "Không thể thêm checklist",
+        title: "Could not add checklist item",
         description: e?.message ?? "",
         variant: "destructive",
       });
@@ -225,7 +225,7 @@ export default function Tasks() {
       qc.invalidateQueries({ queryKey: getListTasksQueryKey() });
     } catch (e: any) {
       toast({
-        title: "Lỗi cập nhật checklist",
+        title: "Checklist update error",
         description: e?.message ?? "",
         variant: "destructive",
       });
@@ -238,7 +238,7 @@ export default function Tasks() {
       qc.invalidateQueries({ queryKey: getListTasksQueryKey() });
     } catch (e: any) {
       toast({
-        title: "Lỗi xóa mục",
+        title: "Item deletion error",
         description: e?.message ?? "",
         variant: "destructive",
       });
@@ -248,7 +248,7 @@ export default function Tasks() {
   const handleExport = async () => {
     try {
       const { data } = await exportQ.refetch();
-      if (!data) throw new Error("Không có dữ liệu");
+      if (!data) throw new Error("No data available to export");
       const XLSX = await import("xlsx");
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(
@@ -262,10 +262,10 @@ export default function Tasks() {
         "Sessions"
       );
       XLSX.writeFile(wb, "summit-tasks-export.xlsx");
-      toast({ title: "Xuất dữ liệu thành công", description: "Đã tải file summit-tasks-export.xlsx" });
+      toast({ title: "Export successful", description: "Downloaded summit-tasks-export.xlsx" });
     } catch (e: any) {
       toast({
-        title: "Lỗi xuất file",
+        title: "Export error",
         description: e?.message ?? "",
         variant: "destructive",
       });
@@ -283,49 +283,49 @@ export default function Tasks() {
     <div className="space-y-8 pb-10">
       <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
         <div className="space-y-2">
-          <h1 className="text-3xl font-semibold tracking-tight">Sổ Tay Công Việc & Chuẩn Bị (To-Do List)</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">Tasks & Summit Preparation</h1>
           <p className="text-muted-foreground text-base max-w-2xl">
-            Quản lý kế hoạch chuẩn bị Summit, phân chia việc cuối ngày và theo dõi checklist cá nhân của học sinh.
+            Manage summit preparation tasks, assign daily group dumps, and track student checklists.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" onClick={handleExport}>
-            <Download className="w-4 h-4 mr-2" /> Xuất Excel
+            <Download className="w-4 h-4 mr-2" /> Export Excel
           </Button>
 
           {/* Quick End-of-Day Task Dump button */}
           <Dialog open={openDump} onOpenChange={setOpenDump}>
             <DialogTrigger asChild>
               <Button variant="secondary" className="border">
-                <Sparkles className="w-4 h-4 mr-2 text-amber-500" /> Bỏ việc cuối ngày
+                <Sparkles className="w-4 h-4 mr-2 text-amber-500" /> Daily Group Dump
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-amber-500" /> Thêm công việc cần làm hôm nay
+                  <Sparkles className="w-5 h-5 text-amber-500" /> Add Today's Tasks
                 </DialogTitle>
               </DialogHeader>
               <div className="space-y-4 py-2">
                 <div className="space-y-2">
-                  <Label>Tên công việc / Thiết bị cần chuẩn bị</Label>
+                  <Label>Task Title / Equipment Needed</Label>
                   <Input
                     value={form.title}
                     onChange={(e) => setForm({ ...form, title: e.target.value })}
-                    placeholder="VD: Thu dọn loa đài phòng Auditorium B"
+                    placeholder="e.g., Gather audio speakers from Auditorium B"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Các mục nhỏ cần làm (Mỗi dòng 1 mục)</Label>
+                  <Label>Sub-items (One per line)</Label>
                   <Textarea
                     value={form.initialChecklistText}
                     onChange={(e) => setForm({ ...form, initialChecklistText: e.target.value })}
-                    placeholder={"- Đóng gói micro\n- Kiểm tra lại cáp HDMI\n- Bàn giao chìa khóa"}
+                    placeholder={"- Pack microphones\n- Check HDMI cables\n- Return room keys"}
                     rows={3}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Hạn chót hoàn thành</Label>
+                  <Label>Due Date & Time</Label>
                   <Input
                     type="datetime-local"
                     value={form.dueAt}
@@ -334,9 +334,9 @@ export default function Tasks() {
                 </div>
               </div>
               <DialogFooter>
-                <Button variant="ghost" onClick={() => setOpenDump(false)}>Hủy</Button>
+                <Button variant="ghost" onClick={() => setOpenDump(false)}>Cancel</Button>
                 <Button onClick={() => handleCreateTask("daily_group_dump")} disabled={createTask.isPending}>
-                  Thêm vào danh sách nhóm
+                  Add to Group Tasks
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -346,40 +346,40 @@ export default function Tasks() {
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button>
-                <Plus className="w-4 h-4 mr-2" /> Tạo Task mới
+                <Plus className="w-4 h-4 mr-2" /> New Task
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-md">
               <DialogHeader>
-                <DialogTitle>Tạo công việc chuẩn bị mới</DialogTitle>
+                <DialogTitle>Create Preparation Task</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 py-2">
                 <div className="space-y-2">
-                  <Label>Tên Task</Label>
+                  <Label>Task Title</Label>
                   <Input
                     value={form.title}
                     onChange={(e) => setForm({ ...form, title: e.target.value })}
-                    placeholder="Xác nhận danh sách diễn giả"
+                    placeholder="Confirm presenter list"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Mô tả chi tiết</Label>
+                  <Label>Detailed Description</Label>
                   <Textarea
                     value={form.description}
                     onChange={(e) => setForm({ ...form, description: e.target.value })}
-                    placeholder="Chi tiết công việc..."
+                    placeholder="Task details..."
                     rows={2}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
-                    <Label>Người phụ trách</Label>
+                    <Label>Assignee</Label>
                     <Select
                       value={form.assigneeId || me?.id || ""}
                       onValueChange={(v) => setForm({ ...form, assigneeId: v })}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Chọn học sinh/GV" />
+                        <SelectValue placeholder="Select student/faculty" />
                       </SelectTrigger>
                       <SelectContent>
                         {(users ?? []).map((u) => (
@@ -391,7 +391,7 @@ export default function Tasks() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>Loại công việc</Label>
+                    <Label>Task Category</Label>
                     <Select
                       value={form.category}
                       onValueChange={(v) => setForm({ ...form, category: v })}
@@ -400,24 +400,24 @@ export default function Tasks() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="general">Chung</SelectItem>
-                        <SelectItem value="daily_group_dump">Bỏ việc cuối ngày</SelectItem>
-                        <SelectItem value="personal_prep">Chuẩn bị cá nhân</SelectItem>
+                        <SelectItem value="general">General</SelectItem>
+                        <SelectItem value="daily_group_dump">Daily Group Dump</SelectItem>
+                        <SelectItem value="personal_prep">Personal Prep</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label>Checklist con ban đầu (Mỗi dòng 1 việc)</Label>
+                  <Label>Initial Sub-items (One per line)</Label>
                   <Textarea
                     value={form.initialChecklistText}
                     onChange={(e) => setForm({ ...form, initialChecklistText: e.target.value })}
-                    placeholder={"In danh bạ\nKiểm tra lại danh sách đăng ký"}
+                    placeholder={"Print attendee roster\nVerify registration list"}
                     rows={2}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Hạn hoàn thành</Label>
+                  <Label>Due Date & Time</Label>
                   <Input
                     type="datetime-local"
                     value={form.dueAt}
@@ -426,9 +426,9 @@ export default function Tasks() {
                 </div>
               </div>
               <DialogFooter>
-                <Button variant="ghost" onClick={() => setOpen(false)}>Hủy</Button>
+                <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
                 <Button onClick={() => handleCreateTask(form.category)} disabled={createTask.isPending}>
-                  Tạo Task
+                  Create Task
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -457,9 +457,9 @@ export default function Tasks() {
       ) : !filteredTasks || filteredTasks.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center border-2 border-dashed rounded-2xl bg-muted/10">
           <ListTodo className="w-16 h-16 text-muted-foreground mb-4 opacity-40" />
-          <h3 className="text-xl font-medium">Chưa có công việc nào</h3>
+          <h3 className="text-xl font-medium">No tasks found</h3>
           <p className="text-muted-foreground mt-2 max-w-md">
-            Nhấn nút "Bỏ việc cuối ngày" hoặc "Tạo Task mới" để thêm danh mục chuẩn bị cho đợt Summit tới.
+            Click "Daily Group Dump" or "New Task" to add preparation items for the upcoming summit.
           </p>
         </div>
       ) : (
@@ -484,7 +484,7 @@ export default function Tasks() {
                       <h3 className="font-semibold text-lg">{t.title}</h3>
                       {t.category === "daily_group_dump" && (
                         <Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/40 dark:text-amber-200">
-                          <Sparkles className="w-3 h-3 mr-1" /> Cuối ngày
+                          <Sparkles className="w-3 h-3 mr-1" /> Daily Dump
                         </Badge>
                       )}
                       <Badge variant="outline" className={STATUS_TONE[(t.status as Status) ?? "todo"]}>
@@ -496,12 +496,12 @@ export default function Tasks() {
                     )}
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground pt-1">
                       <span className="flex items-center gap-1">
-                        <UserCheck className="w-3.5 h-3.5" /> Phụ trách:{" "}
-                        <strong className="text-foreground">{t.assigneeName ?? t.assigneeEmail ?? "Chưa phân công"}</strong>
+                        <UserCheck className="w-3.5 h-3.5" /> Assignee:{" "}
+                        <strong className="text-foreground">{t.assigneeName ?? t.assigneeEmail ?? "Unassigned"}</strong>
                       </span>
                       {t.dueAt && (
                         <span className="flex items-center gap-1">
-                          <Clock className="w-3.5 h-3.5 text-amber-600" /> Hạn: {format(new Date(t.dueAt), "dd/MM/yyyy HH:mm")}
+                          <Clock className="w-3.5 h-3.5 text-amber-600" /> Due: {format(new Date(t.dueAt), "dd/MM/yyyy HH:mm")}
                         </span>
                       )}
                     </div>
@@ -533,15 +533,15 @@ export default function Tasks() {
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Xóa công việc này?</AlertDialogTitle>
+                            <AlertDialogTitle>Delete this task?</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Thao tác này sẽ xóa vĩnh viễn công việc và toàn bộ checklist đi kèm.
+                              This action will permanently delete this task and all attached sub-checklists.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
-                            <AlertDialogCancel>Hủy</AlertDialogCancel>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
                             <AlertDialogAction onClick={() => handleDeleteTask(t.id)}>
-                              Xóa
+                              Delete
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
@@ -555,7 +555,7 @@ export default function Tasks() {
                   <div className="space-y-1.5 pt-1">
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
                       <span className="flex items-center gap-1 font-medium text-foreground">
-                        <CheckSquare className="w-3.5 h-3.5" /> Tiến độ Checklist: {completedCount}/{checklistItems.length} mục
+                        <CheckSquare className="w-3.5 h-3.5" /> Checklist Progress: {completedCount}/{checklistItems.length} items
                       </span>
                       <span>{progressPercent}%</span>
                     </div>
@@ -596,7 +596,7 @@ export default function Tasks() {
                   {/* Add Sub-Checklist Input */}
                   <div className="flex items-center gap-2 pt-1">
                     <Input
-                      placeholder="Thêm mục nhỏ cần làm (+ nhấn Enter)..."
+                      placeholder="Add sub-item (+ press Enter)..."
                       className="h-8 text-sm bg-background"
                       value={newChecklistText[t.id] ?? ""}
                       onChange={(e) => setNewChecklistText({ ...newChecklistText, [t.id]: e.target.value })}
@@ -608,7 +608,7 @@ export default function Tasks() {
                       }}
                     />
                     <Button size="sm" variant="secondary" className="h-8 px-3" onClick={() => handleAddChecklist(t.id)}>
-                      Thêm
+                      Add
                     </Button>
                   </div>
                 </div>

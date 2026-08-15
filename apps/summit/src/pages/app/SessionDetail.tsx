@@ -260,7 +260,7 @@ export default function SessionDetail() {
               {session.mandatory && <Badge variant="destructive">Mandatory</Badge>}
               {isPresenter && (
                 <Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-200">
-                  Diễn giả / Presenter
+                  Presenter
                 </Badge>
               )}
             </div>
@@ -288,7 +288,7 @@ export default function SessionDetail() {
                 className="bg-amber-600 hover:bg-amber-700 text-white font-medium shadow-md transition-all"
                 onClick={() => setShowProjectionModal(true)}
               >
-                <ScanLine className="w-5 h-5 mr-2" /> Trình Chiếu Mã QR Điểm Danh
+                <ScanLine className="w-5 h-5 mr-2" /> Presenter QR Attendance Screen
               </Button>
             )}
 
@@ -319,13 +319,13 @@ export default function SessionDetail() {
         <DialogContent className="max-w-4xl p-8 bg-slate-950 text-slate-50 border-slate-800">
           <DialogHeader className="space-y-2 text-center">
             <Badge className="w-fit mx-auto bg-amber-500/20 text-amber-300 border-amber-500/30">
-              MÀN HÌNH TRÌNH CHIẾU DÀNH CHO DIỄN GIẢ
+              PRESENTER PROJECTOR DISPLAY
             </Badge>
             <DialogTitle className="text-3xl font-bold tracking-tight text-white">
               {session.title}
             </DialogTitle>
             <DialogDescription className="text-slate-400 text-base">
-              Phòng: <strong className="text-slate-200">{session.room}</strong> | Thời gian: {format(parseISO(session.startsAt), "HH:mm")} - {format(parseISO(session.endsAt), "HH:mm")}
+              Room: <strong className="text-slate-200">{session.room}</strong> | Time: {format(parseISO(session.startsAt), "HH:mm")} - {format(parseISO(session.endsAt), "HH:mm")}
             </DialogDescription>
           </DialogHeader>
 
@@ -336,29 +336,29 @@ export default function SessionDetail() {
             
             <div className="text-center space-y-2 max-w-md">
               <p className="text-xl font-medium text-amber-300">
-                📱 Học sinh ở dưới mở camera điện thoại quét mã QR này để điểm danh
+                📱 Scan this QR code with your phone camera to check in
               </p>
               <p className="text-sm text-slate-400">
-                Mã QR luôn mở. Số lượng học sinh tham gia sẽ cập nhật trực tiếp bên dưới.
+                The QR code is active. Checked-in count updates live below.
               </p>
             </div>
 
             <div className="w-full bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center justify-around">
               <div className="text-center">
                 <div className="text-3xl font-bold text-emerald-400">{attendanceData?.length || 0}</div>
-                <div className="text-xs text-slate-400 uppercase tracking-wider mt-1">Đã điểm danh vào phòng</div>
+                <div className="text-xs text-slate-400 uppercase tracking-wider mt-1">Checked In</div>
               </div>
               <div className="h-8 w-px bg-slate-800" />
               <div className="text-center">
                 <div className="text-3xl font-bold text-slate-200">{session.capacity}</div>
-                <div className="text-xs text-slate-400 uppercase tracking-wider mt-1">Sức chứa tối đa</div>
+                <div className="text-xs text-slate-400 uppercase tracking-wider mt-1">Total Capacity</div>
               </div>
             </div>
           </div>
 
           <DialogFooter className="sm:justify-center">
             <Button variant="outline" className="border-slate-700 text-slate-300 hover:bg-slate-900" onClick={() => setShowProjectionModal(false)}>
-              Thoát màn hình trình chiếu
+              Close Presenter View
             </Button>
           </DialogFooter>
         </DialogContent>

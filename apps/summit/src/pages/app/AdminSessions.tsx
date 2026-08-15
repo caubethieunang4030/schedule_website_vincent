@@ -64,10 +64,10 @@ const TRACKS = [
 ];
 
 const TIME_PRESETS = [
-  { label: "Ca 1 (Sáng A: 08:30 - 09:30)", start: "08:30", end: "09:30" },
-  { label: "Ca 2 (Sáng B: 09:45 - 10:45)", start: "09:45", end: "10:45" },
-  { label: "Ca 3 (Chiều C: 13:15 - 14:15)", start: "13:15", end: "14:15" },
-  { label: "Ca 4 (Chiều D: 14:30 - 15:30)", start: "14:30", end: "15:30" },
+  { label: "Slot 1 (Morning A: 08:30 - 09:30)", start: "08:30", end: "09:30" },
+  { label: "Slot 2 (Morning B: 09:45 - 10:45)", start: "09:45", end: "10:45" },
+  { label: "Slot 3 (Afternoon C: 13:15 - 14:15)", start: "13:15", end: "14:15" },
+  { label: "Slot 4 (Afternoon D: 14:30 - 15:30)", start: "14:30", end: "15:30" },
 ];
 
 const trackColors: Record<string, string> = {
@@ -133,37 +133,37 @@ export default function AdminSessions() {
       const XLSX = await import("xlsx");
       const sampleData = [
         {
-          "Tên ca học": "Hội thảo Trí tuệ Nhân tạo trong Y học",
-          "Mô tả": "Giới thiệu các ứng dụng AI trong chẩn đoán hình ảnh",
-          "Địa điểm": "Tòa nhà Khoa học",
-          "Phòng học": "Auditorium A",
-          "Khối (lower/middle/upper/all/teachers)": "upper",
-          "Bắt buộc (true/false)": "false",
-          "Sức chứa": 50,
-          "Bắt đầu (YYYY-MM-DD HH:mm)": "2026-09-15 08:30",
-          "Kết thúc (YYYY-MM-DD HH:mm)": "2026-09-15 09:30",
-          "Diễn giả": "TS. Nguyễn Văn A",
+          "Title": "Artificial Intelligence in Medicine",
+          "Description": "Introduction to AI applications in diagnostic imaging",
+          "Location": "Science Building",
+          "Room": "Auditorium A",
+          "Track": "upper",
+          "Mandatory": "false",
+          "Capacity": 50,
+          "StartsAt": "2026-09-15 08:30",
+          "EndsAt": "2026-09-15 09:30",
+          "Speaker": "Dr. Alex Johnson",
         },
         {
-          "Tên ca học": "Xưởng Lập trình Robotics VEX",
-          "Mô tả": "Thực hành thiết kế robot tự hành",
-          "Địa điểm": "Maker Space",
-          "Phòng học": "Lab 102",
-          "Khối (lower/middle/upper/all/teachers)": "middle",
-          "Bắt buộc (true/false)": "false",
-          "Sức chứa": 25,
-          "Bắt đầu (YYYY-MM-DD HH:mm)": "2026-09-15 09:45",
-          "Kết thúc (YYYY-MM-DD HH:mm)": "2026-09-15 10:45",
-          "Diễn giả": "ThS. Trần Thị B",
+          "Title": "VEX Robotics Workshop",
+          "Description": "Hands-on autonomous robot design",
+          "Location": "Maker Space",
+          "Room": "Lab 102",
+          "Track": "middle",
+          "Mandatory": "false",
+          "Capacity": 25,
+          "StartsAt": "2026-09-15 09:45",
+          "EndsAt": "2026-09-15 10:45",
+          "Speaker": "Prof. Sarah Williams",
         },
       ];
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.json_to_sheet(sampleData);
-      XLSX.utils.book_append_sheet(wb, ws, "CauHocMau");
-      XLSX.writeFile(wb, "mau-nhap-ca-hoc-summit.xlsx");
-      toast({ title: "Đã tải file Excel mẫu (.xlsx)" });
+      XLSX.utils.book_append_sheet(wb, ws, "SessionTemplate");
+      XLSX.writeFile(wb, "summit-session-import-template.xlsx");
+      toast({ title: "Excel template downloaded (.xlsx)" });
     } catch (e: any) {
-      toast({ title: "Lỗi tải file mẫu", description: e.message, variant: "destructive" });
+      toast({ title: "Failed to download template", description: e.message, variant: "destructive" });
     }
   };
 
@@ -178,19 +178,19 @@ export default function AdminSessions() {
       const json: any[] = XLSX.utils.sheet_to_json(ws);
 
       const parsed = json.map((row) => {
-        const titleStr = row["Tên ca học"] || row["Title"] || row["title"] || "";
-        const startStr = row["Bắt đầu (YYYY-MM-DD HH:mm)"] || row["StartsAt"] || row["startsAt"];
-        const endStr = row["Kết thúc (YYYY-MM-DD HH:mm)"] || row["EndsAt"] || row["endsAt"];
-        const speakerStr = row["Diễn giả"] || row["Speaker"] || "";
+        const titleStr = row["Title"] || row["title"] || "";
+        const startStr = row["StartsAt"] || row["startsAt"];
+        const endStr = row["EndsAt"] || row["endsAt"];
+        const speakerStr = row["Speaker"] || row["speaker"] || "";
 
         return {
           title: titleStr,
-          description: row["Mô tả"] || row["Description"] || "",
-          location: row["Địa điểm"] || row["Location"] || "",
-          room: row["Phòng học"] || row["Room"] || "",
-          track: row["Khối (lower/middle/upper/all/teachers)"] || row["Track"] || "all",
-          mandatory: String(row["Bắt buộc (true/false)"] || row["Mandatory"]).toLowerCase() === "true",
-          capacity: Number(row["Sức chứa"] || row["Capacity"]) || 30,
+          description: row["Description"] || row["description"] || "",
+          location: row["Location"] || row["location"] || "",
+          room: row["Room"] || row["room"] || "",
+          track: row["Track"] || row["track"] || "all",
+          mandatory: String(row["Mandatory"] || row["mandatory"]).toLowerCase() === "true",
+          capacity: Number(row["Capacity"] || row["capacity"]) || 30,
           startsAt: new Date(startStr).toISOString(),
           endsAt: new Date(endStr).toISOString(),
           speakers: speakerStr ? [{ name: speakerStr }] : [],
@@ -198,9 +198,9 @@ export default function AdminSessions() {
       }).filter((r) => r.title && r.startsAt && r.endsAt);
 
       setParsedImportRows(parsed);
-      toast({ title: `Đã đọc ${parsed.length} ca học từ file Excel` });
+      toast({ title: `Successfully read ${parsed.length} sessions from Excel` });
     } catch (err: any) {
-      toast({ title: "Lỗi đọc file Excel", description: err.message, variant: "destructive" });
+      toast({ title: "Failed to parse Excel file", description: err.message, variant: "destructive" });
     }
   };
 
@@ -209,11 +209,11 @@ export default function AdminSessions() {
     try {
       await createBulkMutation.mutateAsync({ data: parsedImportRows });
       qc.invalidateQueries({ queryKey: getListSessionsQueryKey() });
-      toast({ title: `Đã nhập thành công ${parsedImportRows.length} ca học mới!` });
+      toast({ title: `Successfully imported ${parsedImportRows.length} new sessions!` });
       setOpenImport(false);
       setParsedImportRows([]);
     } catch (e: any) {
-      toast({ title: "Lỗi nhập hàng loạt", description: e.message, variant: "destructive" });
+      toast({ title: "Bulk import failed", description: e.message, variant: "destructive" });
     }
   };
 
@@ -332,20 +332,20 @@ export default function AdminSessions() {
     <div className="space-y-8 pb-10">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="space-y-2">
-          <h1 className="text-3xl font-semibold tracking-tight">Quản Lý Ca Học (Sessions CMS)</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">Sessions CMS</h1>
           <p className="text-muted-foreground text-lg">
-            Quản lý khung giờ, phòng học và danh sách hội thảo ngày Summit.
+            Manage time slots, room assignments, and summit workshop schedule.
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={handleDownloadTemplate}>
-            <Download className="w-4 h-4 mr-2" /> Tải mẫu Excel
+            <Download className="w-4 h-4 mr-2" /> Download Template
           </Button>
           <Button variant="secondary" className="border" onClick={() => setOpenImport(true)}>
-            <FileSpreadsheet className="w-4 h-4 mr-2 text-emerald-600" /> Nhập từ Excel
+            <FileSpreadsheet className="w-4 h-4 mr-2 text-emerald-600" /> Import Excel
           </Button>
           <Button onClick={handleOpenCreate} className="h-10 px-4">
-            <Plus className="w-4 h-4 mr-2" /> Thêm Ca Học
+            <Plus className="w-4 h-4 mr-2" /> Add Session
           </Button>
         </div>
       </div>
