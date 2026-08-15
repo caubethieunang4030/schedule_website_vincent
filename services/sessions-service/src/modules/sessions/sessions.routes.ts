@@ -5,13 +5,7 @@ import { SessionsController } from "./sessions.controller";
 const router: IRouter = Router();
 const controller = new SessionsController();
 
-// Unauthenticated sync endpoint for Pi 5 device
-router.post("/attendance/sync-pi5", controller.syncPi5Attendance.bind(controller));
-
 router.use(requireAuth);
-
-router.get("/attendance/logs", requireRole("faculty", "organizer", "admin"), controller.getAllAttendanceLogs.bind(controller));
-router.get("/attendance/export", requireRole("faculty", "organizer", "admin"), controller.exportAttendanceLogs.bind(controller));
 
 router.get("/sessions", controller.listSessions.bind(controller));
 router.post(

@@ -103,8 +103,8 @@ export const attendance = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     userCode: text("user_code"),
     type: text("type").notNull().default("VAO"), // VAO | RA
-    deviceId: text("device_id").notNull().default("pi5"),
-    method: text("method").notNull().default("qr"), // qr | room | pi5_face
+    deviceId: text("device_id").notNull().default("web"),
+    method: text("method").notNull().default("qr"), // qr | room
     checkedInAt: timestamp("checked_in_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

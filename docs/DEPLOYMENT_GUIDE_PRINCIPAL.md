@@ -13,7 +13,7 @@ Hệ thống **Learning Summit** được thiết kế dưới dạng nền tả
 
 2. **Ngày diễn ra sự kiện (Summit Day - 1 ngày duy nhất):**
    * Cho phép khoảng **600+ học sinh và giáo viên** truy cập đồng thời.
-   * **Điểm danh tự động (QR Code & Pi 5 Sync):** Quét mã QR tại cửa phòng học để ghi nhận tham dự thực tế.
+   * **Điểm danh tự động (QR Code):** Quét mã QR tại cửa phòng học để ghi nhận tham dự thực tế.
    * **Khảo sát & Phản hồi (Feedback & Custom Forms):** Thu thập đánh giá tức thì sau mỗi phiên hội thảo.
 
 ---
@@ -41,7 +41,7 @@ Hệ thống **Learning Summit** được thiết kế dưới dạng nền tả
    * Học sinh vào đăng ký các phiên học theo nguyện vọng.
    * Học sinh và các nhóm ban tổ chức sử dụng mục **To-Do List / Bỏ việc cuối ngày** để chuẩn bị trang thiết bị.
 3. **Trong ngày Summit:**
-   * Ban tổ chức dùng tính năng quét mã QR / Pi 5 để điểm danh tại từng phòng.
+   * Ban tổ chức dùng tính năng quét mã QR để điểm danh tại từng phòng.
    * Xem báo cáo tham dự thời gian thực trên màn hình Admin.
 4. **Sau sự kiện:**
    * Xuất báo cáo tổng kết toàn bộ dữ liệu ra file Excel (`summit-tasks-export.xlsx`) để lưu trữ cho Ban Giám Hiệu.
