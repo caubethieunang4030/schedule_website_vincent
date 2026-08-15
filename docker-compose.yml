@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: summit_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: summit_user
+      POSTGRES_PASSWORD: summit_password
+      POSTGRES_DB: schedule_website_vincent
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U summit_user -d schedule_website_vincent"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: summit_monorepo
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://summit_user:summit_password@postgres:5432/schedule_website_vincent
+      PORT: 8080
+      SESSION_SECRET: "summit_secret_key_change_in_production"
+      CLERK_PUBLISHABLE_KEY: "${CLERK_PUBLISHABLE_KEY}"
+      CLERK_SECRET_KEY: "${CLERK_SECRET_KEY}"
+      VITE_CLERK_PUBLISHABLE_KEY: "${VITE_CLERK_PUBLISHABLE_KEY}"
+    ports:
+      - "8080:8080"
+      - "5173:5173"
+
+volumes:
+  postgres_data:
