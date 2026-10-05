@@ -13,7 +13,7 @@ import {
   Shield,
 } from "lucide-react";
 import { useGetMe } from "@workspace/api-client-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import rabunGapLogo from "@assets/rabun-gap-logo-clear.png";
 import Dashboard from "./app/Dashboard";
