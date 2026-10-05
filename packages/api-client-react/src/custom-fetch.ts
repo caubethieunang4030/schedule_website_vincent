@@ -446,7 +446,10 @@ export async function customFetch<T = unknown>(
     const response = await fetch(input, { ...init, method, headers });
 
     if (response.ok) {
-      return (await parseSuccessBody(response, responseType, requestInfo)) as T;
+      const contentType = response.headers.get("content-type") || "";
+      if (!contentType.includes("text/html")) {
+        return (await parseSuccessBody(response, responseType, requestInfo)) as T;
+      }
     }
   } catch (e) {
     // Network or static host fallback
@@ -638,8 +641,58 @@ export async function customFetch<T = unknown>(
     return forms as T;
   }
 
+  if (urlPath.includes("/api/students") || urlPath.includes("/api/invited-students")) {
+    let students = getStorage("invited_students", [
+      { id: "invited_01", email: "student.alex@student.rabungap.org", firstName: "Alex", lastName: "Johnson", division: "upper" },
+      { id: "invited_02", email: "student.emma@student.rabungap.org", firstName: "Emma", lastName: "Watson", division: "middle" },
+      { id: "invited_03", email: "student.liam@student.rabungap.org", firstName: "Liam", lastName: "Brown", division: "lower" },
+    ]);
+    if (method === "GET") return students as T;
+    if (method === "POST") {
+      let bodyData: any = {};
+      try {
+        if (typeof init.body === "string") bodyData = JSON.parse(init.body);
+      } catch (e) {}
+      const newStudent = {
+        id: `invited_${Date.now()}`,
+        email: bodyData.email ?? "",
+        firstName: bodyData.firstName ?? "",
+        lastName: bodyData.lastName ?? "",
+        division: bodyData.division ?? "all",
+      };
+      students = [newStudent, ...students];
+      setStorage("invited_students", students);
+      return newStudent as T;
+    }
+    return students as T;
+  }
+
+  if (urlPath.includes("/api/registrations") || urlPath.includes("/api/my-registrations")) {
+    let regs = getStorage("registrations", ["session_keynote_01", "session_web_upper_01"]);
+    if (method === "GET") return regs.map((sId: string) => ({ sessionId: sId })) as T;
+    if (method === "POST") {
+      let bodyData: any = {};
+      try {
+        if (typeof init.body === "string") bodyData = JSON.parse(init.body);
+      } catch (e) {}
+      const sId = bodyData.sessionId || urlPath.split("/").slice(-2)[0];
+      if (sId && !regs.includes(sId)) {
+        regs = [...regs, sId];
+        setStorage("registrations", regs);
+      }
+      return { success: true, sessionId: sId } as T;
+    }
+    if (method === "DELETE") {
+      const sId = urlPath.split("/").slice(-2)[0];
+      regs = regs.filter((id: string) => id !== sId);
+      setStorage("registrations", regs);
+      return { success: true } as T;
+    }
+    return regs as T;
+  }
+
   if (urlPath.includes("/api/sessions")) {
-    return [
+    const defaultSessions = [
       {
         id: "session_keynote_01",
         title: "Learning Summit 2026: Opening Keynote",
@@ -715,8 +768,20 @@ export async function customFetch<T = unknown>(
         speakers: [{ name: "Sarah Smith", title: "Department Chair" }],
         tags: ["Faculty", "EdTech"],
       },
-    ] as T;
+    ];
+
+    let sessions = getStorage("sessions", defaultSessions);
+    const parts = urlPath.split("/");
+    const lastPart = parts[parts.length - 1];
+
+    if (lastPart && lastPart !== "sessions" && !lastPart.includes("?")) {
+      const found = sessions.find((s: any) => s.id === lastPart);
+      return (found || sessions[0]) as T;
+    }
+
+    return sessions as T;
   }
 
   return [] as T;
 }
+
