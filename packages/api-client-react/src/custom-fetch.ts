@@ -458,7 +458,7 @@ export async function customFetch<T = unknown>(
   // Graceful fallback for standalone static hosting (e.g. Firebase Hosting)
   const urlPath = requestInfo.url;
 
-  if (urlPath.includes("/api/me")) {
+  if (urlPath.endsWith("/api/me") || urlPath.endsWith("/api/me/")) {
     return {
       id: "user_admin_01",
       email: "admin@rabungap.org",
@@ -469,6 +469,7 @@ export async function customFetch<T = unknown>(
       imageUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=VincentAdmin",
     } as T;
   }
+
 
   if (urlPath.includes("/api/users")) {
     return [
