@@ -22,8 +22,10 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -321,6 +323,9 @@ export default function Tasks() {
                 <DialogTitle className="flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-amber-500" /> Add Today's Tasks
                 </DialogTitle>
+                <DialogDescription>
+                  Enter preparation tasks and sub-items for group assignment.
+                </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-2">
                 <div className="space-y-2">
@@ -368,7 +373,11 @@ export default function Tasks() {
             <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle>Create Preparation Task</DialogTitle>
+                <DialogDescription>
+                  Fill out task details, assignees, and optional checklist items.
+                </DialogDescription>
               </DialogHeader>
+
               <div className="space-y-4 py-2">
                 <div className="space-y-2">
                   <Label>Task Title</Label>

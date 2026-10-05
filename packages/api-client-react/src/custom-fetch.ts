@@ -467,7 +467,10 @@ export async function customFetch<T = unknown>(
     pathname = pathname.slice(0, -1);
   }
 
-  if (pathname === "/api/me") {
+  const urlPath = pathname;
+
+  if (urlPath === "/api/me") {
+
 
     let profile = getStorage("user_profile", {
       id: "user_admin_01",
