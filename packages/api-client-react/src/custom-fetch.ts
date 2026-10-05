@@ -456,9 +456,19 @@ export async function customFetch<T = unknown>(
   }
 
   // Graceful fallback for standalone static hosting (e.g. Firebase Hosting)
-  const urlPath = requestInfo.url;
+  const rawUrl = requestInfo.url;
+  let pathname = rawUrl;
+  try {
+    const parsed = new URL(rawUrl, typeof window !== "undefined" ? window.location.origin : "http://localhost");
+    pathname = parsed.pathname;
+  } catch (e) {}
 
-  if (urlPath.endsWith("/api/me") || urlPath.endsWith("/api/me/")) {
+  if (pathname.length > 1 && pathname.endsWith("/")) {
+    pathname = pathname.slice(0, -1);
+  }
+
+  if (pathname === "/api/me") {
+
     let profile = getStorage("user_profile", {
       id: "user_admin_01",
       email: "admin@rabungap.org",
@@ -695,13 +705,13 @@ export async function customFetch<T = unknown>(
     return forms as T;
   }
 
-  if (urlPath.includes("/checkin") || urlPath.includes("/attendance")) {
+  if (pathname.includes("/checkin") || pathname.includes("/attendance")) {
     return { success: true, message: "Check-in successful", timestamp: new Date().toISOString() } as T;
   }
 
-  if (urlPath.includes("/register") || urlPath.includes("/unregister")) {
+  if (pathname.includes("/register") || pathname.includes("/unregister")) {
     let regs = getStorage("registrations", ["session_keynote_01", "session_web_upper_01"]);
-    const parts = urlPath.split("/");
+    const parts = pathname.split("/");
     const registerIdx = parts.findIndex((p) => p === "register" || p === "unregister");
     const sId = registerIdx > 0 ? parts[registerIdx - 1] : parts[parts.length - 2];
 
@@ -721,7 +731,7 @@ export async function customFetch<T = unknown>(
     }
   }
 
-  if (urlPath.includes("/api/students") || urlPath.includes("/api/invited-students")) {
+  if (pathname.includes("/api/students") || pathname.includes("/api/invited-students")) {
     let students = getStorage("invited_students", [
       { id: "invited_01", email: "student.alex@student.rabungap.org", firstName: "Alex", lastName: "Johnson", division: "upper" },
       { id: "invited_02", email: "student.emma@student.rabungap.org", firstName: "Emma", lastName: "Watson", division: "middle" },
@@ -747,7 +757,7 @@ export async function customFetch<T = unknown>(
     return students as T;
   }
 
-  if (urlPath.includes("/api/me/registrations") || urlPath.includes("/api/registrations")) {
+  if (pathname.includes("/api/me/registrations") || pathname.includes("/api/registrations")) {
     const regs = getStorage("registrations", ["session_keynote_01", "session_web_upper_01"]);
     const defaultSessions = [
       {
@@ -834,7 +844,7 @@ export async function customFetch<T = unknown>(
     return registeredSessions as T;
   }
 
-  if (urlPath.includes("/api/sessions")) {
+  if (pathname.includes("/api/sessions")) {
     const defaultSessions = [
       {
         id: "session_keynote_01",
@@ -922,7 +932,7 @@ export async function customFetch<T = unknown>(
       registeredCount: (s.registeredCount ?? 15) + (regs.includes(s.id) ? 1 : 0),
     }));
 
-    const parts = urlPath.split("/");
+    const parts = pathname.split("/");
     const lastPart = parts[parts.length - 1];
 
     if (lastPart && lastPart !== "sessions" && !lastPart.includes("?")) {
@@ -932,6 +942,7 @@ export async function customFetch<T = unknown>(
 
     return sessions as T;
   }
+
 
   return [] as T;
 }
