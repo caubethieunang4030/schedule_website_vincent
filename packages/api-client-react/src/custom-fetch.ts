@@ -501,11 +501,51 @@ export async function customFetch<T = unknown>(
 
   if (urlPath.includes("/api/dashboard/summary")) {
     const currentTasks = getStorage("tasks", DEFAULT_TASKS);
+    const regs = getStorage("registrations", ["session_keynote_01", "session_web_upper_01"]);
+    const defaultSessions = [
+      {
+        id: "session_keynote_01",
+        title: "Learning Summit 2026: Opening Keynote",
+        description: "Welcome address by Head of School & keynote on Innovation in K-12 Education.",
+        location: "Main Campus",
+        room: "Grand Auditorium",
+        track: "required_all",
+        mandatory: true,
+        capacity: 600,
+        startsAt: "2026-09-09T08:00:00.000Z",
+        endsAt: "2026-09-09T09:00:00.000Z",
+        organizers: ["Vincent Admin"],
+        speakers: [{ name: "Dr. Elizabeth Vance", title: "Head of School" }],
+        tags: ["Keynote", "Plenary", "Mandatory"],
+      },
+      {
+        id: "session_web_upper_01",
+        title: "Full-Stack Web Development & Modern App Architecture",
+        description: "Deep dive into TypeScript, Vite, React, Express, and Database design for Upper School.",
+        location: "Innovation Hub",
+        room: "Tech Center Lab B",
+        track: "upper",
+        mandatory: false,
+        capacity: 40,
+        startsAt: "2026-09-09T13:00:00.000Z",
+        endsAt: "2026-09-09T14:00:00.000Z",
+        organizers: ["Vincent Admin"],
+        speakers: [{ name: "Vincent Huynh", title: "Lead Software Architect" }],
+        tags: ["Web Dev", "Coding"],
+      },
+    ];
+
+    let sessions = getStorage("sessions", defaultSessions);
+    const nextSessions = sessions
+      .filter((s: any) => regs.includes(s.id))
+      .map((s: any) => ({ ...s, isRegistered: true }));
+
     return {
-      totalSessions: 5,
+      totalSessions: sessions.length,
       totalAttendees: 240,
-      myRegisteredSessions: 2,
+      myRegisteredSessions: regs.length,
       pendingTasks: currentTasks.filter((t: any) => t.status !== "completed").length,
+      nextSessions: nextSessions.length > 0 ? nextSessions : [sessions[0]],
       trackDistribution: [
         { track: "required_all", count: 1 },
         { track: "lower", count: 1 },
@@ -515,6 +555,7 @@ export async function customFetch<T = unknown>(
       ],
     } as T;
   }
+
 
   if (urlPath.includes("/api/tasks")) {
     let tasks = getStorage("tasks", DEFAULT_TASKS);
