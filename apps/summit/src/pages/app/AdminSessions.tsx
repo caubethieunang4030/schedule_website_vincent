@@ -316,7 +316,15 @@ export default function AdminSessions() {
     }
   };
 
-  const filtered = (sessions ?? []).filter((s) => {
+  const sessionList = Array.isArray(sessions)
+    ? sessions
+    : Array.isArray((sessions as any)?.sessions)
+      ? (sessions as any).sessions
+      : Array.isArray((sessions as any)?.data)
+        ? (sessions as any).data
+        : [];
+
+  const filtered = sessionList.filter((s: any) => {
     if (!filter) return true;
     const q = filter.toLowerCase();
     return (
@@ -357,7 +365,7 @@ export default function AdminSessions() {
           </div>
           <div>
             <div className="text-sm text-muted-foreground">Total Sessions</div>
-            <div className="text-2xl font-semibold mt-1">{sessions?.length ?? 0}</div>
+            <div className="text-2xl font-semibold mt-1">{sessionList.length}</div>
           </div>
         </div>
         <div className="bg-card border rounded-xl p-5 flex items-center gap-4">
@@ -367,7 +375,7 @@ export default function AdminSessions() {
           <div>
             <div className="text-sm text-muted-foreground">Mandatory</div>
             <div className="text-2xl font-semibold mt-1">
-              {sessions?.filter((s) => s.mandatory).length ?? 0}
+              {sessionList.filter((s: any) => s.mandatory).length}
             </div>
           </div>
         </div>
@@ -378,7 +386,7 @@ export default function AdminSessions() {
           <div>
             <div className="text-sm text-muted-foreground">Highest Capacity</div>
             <div className="text-2xl font-semibold mt-1">
-              {sessions?.length ? Math.max(...sessions.map((s) => s.capacity)) : 0}
+              {sessionList.length ? Math.max(...sessionList.map((s: any) => s.capacity)) : 0}
             </div>
           </div>
         </div>
@@ -419,7 +427,7 @@ export default function AdminSessions() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((s) => (
+                {filtered.map((s: any) => (
                   <TableRow key={s.id}>
                     <TableCell className="font-medium">
                       <div className="space-y-1">

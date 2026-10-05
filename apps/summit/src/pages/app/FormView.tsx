@@ -87,11 +87,19 @@ export default function FormView() {
     }
   };
 
+  const responseList = Array.isArray(responses)
+    ? responses
+    : Array.isArray((responses as any)?.responses)
+      ? (responses as any).responses
+      : Array.isArray((responses as any)?.data)
+        ? (responses as any).data
+        : [];
+
   const handleExportResponses = async () => {
-    if (!responses || !form) return;
+    if (responseList.length === 0 || !form) return;
     const XLSX = await import("xlsx");
 
-    const rows = responses.map((r) => {
+    const rows = responseList.map((r: any) => {
       const rowData: Record<string, any> = {
         "Response ID": r.id,
         "User Name": r.userName ?? "Anonymous",
@@ -218,20 +226,20 @@ export default function FormView() {
 
         {canSeeResponses(me?.role, isCreator) && (
           <TabsContent value="responses" className="space-y-4">
-            {responses && responses.length > 0 && (
+            {responseList.length > 0 && (
               <div className="flex justify-end">
                 <Button onClick={handleExportResponses} variant="outline" size="sm">
                   <Download className="w-4 h-4 mr-2" /> Export Responses
                 </Button>
               </div>
             )}
-            {!responses || responses.length === 0 ? (
+            {responseList.length === 0 ? (
               <div className="border-2 border-dashed rounded-xl py-12 text-center text-muted-foreground bg-muted/10">
                 No responses yet.
               </div>
             ) : (
               <div className="space-y-3">
-                {responses.map((r) => (
+                {responseList.map((r: any) => (
                   <div
                     key={r.id}
                     className="bg-card border rounded-xl p-5 space-y-3"

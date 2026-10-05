@@ -124,10 +124,10 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent className="flex-1 min-h-0 pt-4">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={summary.trackBreakdown} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <BarChart data={summary.trackBreakdown || []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <XAxis 
                   dataKey="track" 
-                  tickFormatter={(val) => val.charAt(0).toUpperCase() + val.slice(1)} 
+                  tickFormatter={(val) => val ? val.charAt(0).toUpperCase() + val.slice(1) : ''} 
                   axisLine={false}
                   tickLine={false}
                   dy={10}
@@ -138,7 +138,7 @@ export default function Dashboard() {
                   contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                 />
                 <Bar dataKey="registeredCount" radius={[4, 4, 0, 0]}>
-                  {summary.trackBreakdown.map((entry, index) => (
+                  {(summary.trackBreakdown || []).map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={trackColors[entry.track] || trackColors.all} />
                   ))}
                 </Bar>

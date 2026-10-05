@@ -16,23 +16,34 @@ export default function Schedule() {
   );
 
   const groupedSessions = useMemo(() => {
-    if (!sessions) return [];
+    if (!Array.isArray(sessions)) return [];
     
     const groups: Record<string, typeof sessions> = {};
     
     sessions.forEach(session => {
-      const dateKey = format(parseISO(session.startsAt), "yyyy-MM-dd");
-      if (!groups[dateKey]) groups[dateKey] = [];
-      groups[dateKey].push(session);
+      if (!session?.startsAt) return;
+      try {
+        const dateKey = format(parseISO(session.startsAt), "yyyy-MM-dd");
+        if (!groups[dateKey]) groups[dateKey] = [];
+        groups[dateKey].push(session);
+      } catch {}
     });
 
     return Object.entries(groups)
       .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([date, items]) => ({
-        date,
-        formattedDate: format(parseISO(items[0].startsAt), "EEEE, MMM d"),
-        items: items.sort((a, b) => a.startsAt.localeCompare(b.startsAt))
-      }));
+      .map(([date, items]) => {
+        let formattedDate = date;
+        try {
+          if (items[0]?.startsAt) {
+            formattedDate = format(parseISO(items[0].startsAt), "EEEE, MMM d");
+          }
+        } catch {}
+        return {
+          date,
+          formattedDate,
+          items: items.sort((a, b) => (a.startsAt || "").localeCompare(b.startsAt || ""))
+        };
+      });
   }, [sessions]);
 
   return (

@@ -1,0 +1,33 @@
+# Firebase Data Connect Relational Database Schema
+
+type User @table {
+  email: String!
+  displayName: String!
+  avatarUrl: String
+}
+
+type Project @table {
+  title: String!
+  description: String
+  deadline: Timestamp
+  owner: User!
+}
+
+type Task @table {
+  title: String!
+  description: String
+  status: String!
+  createdAt: Timestamp! @default(expr: "request.time")
+  dueDate: Timestamp
+  project: Project!
+}
+
+type Tag @table {
+  name: String!
+  colorCode: String!
+}
+
+type TaskTag @table(key: ["task", "tag"]) {
+  task: Task!
+  tag: Tag!
+}

@@ -1,6 +1,7 @@
-import { SignInButton, SignUpButton } from "@clerk/react";
 import { CalendarDays, CheckSquare, FileText, QrCode, Bell } from "lucide-react";
 import rabunGapLogo from "@assets/rabun-gap-logo-clear.png";
+import { Link } from "wouter";
+import { SignInButton, UserButton, Show } from "@clerk/react";
 
 export default function LandingPage() {
   return (
@@ -10,9 +11,23 @@ export default function LandingPage() {
           <img src={rabunGapLogo} alt="Rabun Gap-Nacoochee School" className="h-10 w-auto" />
         </div>
         <div className="flex items-center gap-4">
-          <SignInButton mode="modal">
-            <button className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Sign In</button>
-          </SignInButton>
+          <Show when="signed-out">
+            <SignInButton mode="modal">
+              <button className="cursor-pointer text-sm font-medium px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">
+                Sign In
+              </button>
+            </SignInButton>
+          </Show>
+          <Show when="signed-in">
+            <div className="flex items-center gap-3">
+              <Link href="/app">
+                <span className="cursor-pointer text-sm font-medium px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">
+                  Go to App
+                </span>
+              </Link>
+              <UserButton />
+            </div>
+          </Show>
         </div>
       </header>
 
@@ -26,11 +41,20 @@ export default function LandingPage() {
             Manage your schedule, track your tasks, and connect with faculty and peers during the summit.
           </p>
           <div className="pt-8">
-            <SignUpButton mode="modal">
-              <button className="px-8 py-4 rounded-xl bg-primary text-primary-foreground font-semibold text-lg hover:bg-primary/90 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5">
-                Join the Summit
-              </button>
-            </SignUpButton>
+            <Show when="signed-out">
+              <SignInButton mode="modal">
+                <button className="inline-block cursor-pointer px-8 py-4 rounded-xl bg-primary text-primary-foreground font-semibold text-lg hover:bg-primary/90 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5">
+                  Join the Summit & View Schedule
+                </button>
+              </SignInButton>
+            </Show>
+            <Show when="signed-in">
+              <Link href="/app">
+                <span className="inline-block cursor-pointer px-8 py-4 rounded-xl bg-primary text-primary-foreground font-semibold text-lg hover:bg-primary/90 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5">
+                  Join the Summit & View Schedule
+                </span>
+              </Link>
+            </Show>
             <p className="mt-4 text-sm text-muted-foreground">Sign in with your school email (.edu or .org)</p>
           </div>
         </section>

@@ -1,0 +1,47 @@
+# Firebase Data Connect GraphQL Queries
+
+query GetUsers @auth(level: PUBLIC) {
+  users {
+    id
+    email
+    displayName
+    avatarUrl
+  }
+}
+
+query GetProjects @auth(level: PUBLIC) {
+  projects {
+    id
+    title
+    description
+    deadline
+    owner {
+      id
+      displayName
+      email
+    }
+  }
+}
+
+query GetTasksByProject($projectId: UUID!) @auth(level: PUBLIC) {
+  tasks(where: { projectId: { eq: $projectId } }) {
+    id
+    title
+    description
+    status
+    createdAt
+    dueDate
+    project {
+      id
+      title
+    }
+  }
+}
+
+query GetTags @auth(level: PUBLIC) {
+  tags {
+    id
+    name
+    colorCode
+  }
+}

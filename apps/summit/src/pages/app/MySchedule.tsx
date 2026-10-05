@@ -12,35 +12,36 @@ export default function MySchedule() {
   const { data: registrations, isLoading } = useGetMyRegistrations();
 
   const groupedSessions = useMemo(() => {
-    if (!registrations) return [];
+    if (!Array.isArray(registrations)) return [];
     
-    // API returns Registration which has sessionId. But wait, the hook returns registrations.
-    // Let me check useGetMyRegistrations return type. Oh wait, it might return Session[] based on the prompt description:
-    // "/app/my-schedule — useGetMyRegistrations grouped by date, with the same SessionCard component."
-    // Let's assume it returns Session[]. If it returns Registration[], I'd need to fetch sessions separately or it includes the session.
-    // Let's assume it returns an array of Session objects.
-    
-    const sessions = registrations as any[]; // Type coercion for safety, assuming it's Session[]
-    
+    const sessions = registrations as any[];
     const groups: Record<string, typeof sessions> = {};
     
     sessions.forEach(session => {
-      // Handle case where session is wrapped in a registration object
-      const s = session.session || session;
-      if (!s.startsAt) return; // safety
-      
-      const dateKey = format(parseISO(s.startsAt), "yyyy-MM-dd");
-      if (!groups[dateKey]) groups[dateKey] = [];
-      groups[dateKey].push(s);
+      const s = session?.session || session;
+      if (!s?.startsAt) return;
+      try {
+        const dateKey = format(parseISO(s.startsAt), "yyyy-MM-dd");
+        if (!groups[dateKey]) groups[dateKey] = [];
+        groups[dateKey].push(s);
+      } catch {}
     });
 
     return Object.entries(groups)
       .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([date, items]) => ({
-        date,
-        formattedDate: format(parseISO(items[0].startsAt), "EEEE, MMM d"),
-        items: items.sort((a, b) => a.startsAt.localeCompare(b.startsAt))
-      }));
+      .map(([date, items]) => {
+        let formattedDate = date;
+        try {
+          if (items[0]?.startsAt) {
+            formattedDate = format(parseISO(items[0].startsAt), "EEEE, MMM d");
+          }
+        } catch {}
+        return {
+          date,
+          formattedDate,
+          items: items.sort((a, b) => (a.startsAt || "").localeCompare(b.startsAt || ""))
+        };
+      });
   }, [registrations]);
 
   return (

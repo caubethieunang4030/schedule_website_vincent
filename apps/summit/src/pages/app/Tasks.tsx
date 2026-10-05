@@ -272,7 +272,23 @@ export default function Tasks() {
     }
   };
 
-  const filteredTasks = (tasks ?? []).filter((t) => {
+  const userList = Array.isArray(users)
+    ? users
+    : Array.isArray((users as any)?.users)
+      ? (users as any).users
+      : Array.isArray((users as any)?.data)
+        ? (users as any).data
+        : [];
+
+  const taskList = Array.isArray(tasks)
+    ? tasks
+    : Array.isArray((tasks as any)?.tasks)
+      ? (tasks as any).tasks
+      : Array.isArray((tasks as any)?.data)
+        ? (tasks as any).data
+        : [];
+
+  const filteredTasks = taskList.filter((t: any) => {
     if (filterCategory === "all") return true;
     if (filterCategory === "daily_group_dump") return t.category === "daily_group_dump";
     if (filterCategory === "personal_prep") return t.category === "personal_prep" || t.assigneeId === me?.id;
@@ -382,7 +398,7 @@ export default function Tasks() {
                         <SelectValue placeholder="Select student/faculty" />
                       </SelectTrigger>
                       <SelectContent>
-                        {(users ?? []).map((u) => (
+                        {userList.map((u: any) => (
                           <SelectItem key={u.id} value={u.id}>
                             {[u.firstName, u.lastName].filter(Boolean).join(" ") || u.email}
                           </SelectItem>
@@ -464,9 +480,9 @@ export default function Tasks() {
         </div>
       ) : (
         <div className="space-y-4">
-          {filteredTasks.map((t, idx) => {
+          {filteredTasks.map((t: any, idx: number) => {
             const checklistItems = t.checklists ?? [];
-            const completedCount = checklistItems.filter((c) => c.isCompleted).length;
+            const completedCount = checklistItems.filter((c: any) => c.isCompleted).length;
             const progressPercent = checklistItems.length > 0 ? Math.round((completedCount / checklistItems.length) * 100) : 0;
 
             return (
@@ -566,7 +582,7 @@ export default function Tasks() {
                 {/* Sub-Checklist Items */}
                 <div className="bg-muted/30 rounded-xl p-3.5 space-y-2.5">
                   <div className="space-y-2">
-                    {checklistItems.map((item) => (
+                    {checklistItems.map((item: any) => (
                       <div key={item.id} className="flex items-center justify-between gap-2 group text-sm">
                         <div className="flex items-center gap-2.5 min-w-0">
                           <Checkbox

@@ -1,0 +1,42 @@
+# Firebase Data Connect GraphQL Mutations
+
+mutation CreateUser($email: String!, $displayName: String!, $avatarUrl: String) @auth(level: PUBLIC) {
+  user_insert(data: {
+    email: $email,
+    displayName: $displayName,
+    avatarUrl: $avatarUrl
+  })
+}
+
+mutation CreateProject($title: String!, $description: String, $deadline: Timestamp, $ownerId: UUID!) @auth(level: PUBLIC) {
+  project_insert(data: {
+    title: $title,
+    description: $description,
+    deadline: $deadline,
+    ownerId: $ownerId
+  })
+}
+
+mutation CreateTask($title: String!, $description: String, $status: String!, $dueDate: Timestamp, $projectId: UUID!) @auth(level: PUBLIC) {
+  task_insert(data: {
+    title: $title,
+    description: $description,
+    status: $status,
+    dueDate: $dueDate,
+    projectId: $projectId
+  })
+}
+
+mutation CreateTag($name: String!, $colorCode: String!) @auth(level: PUBLIC) {
+  tag_insert(data: {
+    name: $name,
+    colorCode: $colorCode
+  })
+}
+
+mutation AddTagToTask($taskId: UUID!, $tagId: UUID!) @auth(level: PUBLIC) {
+  taskTag_insert(data: {
+    taskId: $taskId,
+    tagId: $tagId
+  })
+}

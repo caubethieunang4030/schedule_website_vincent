@@ -1,0 +1,12 @@
+specVersion: "v1alpha"
+serviceId: "summit-db"
+location: "us-central1"
+schema:
+  source: "./schema"
+  datasource:
+    postgresql:
+      database: "schedule_website_vincent"
+      cloudSql:
+        instanceId: "summit-postgres-instance"
+connectorDirs:
+  - "./connector"

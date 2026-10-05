@@ -15,6 +15,14 @@ export default function FormsList() {
   const { data: forms, isLoading } = useListForms();
   const allowed = canManage(me?.role);
 
+  const formList = Array.isArray(forms)
+    ? forms
+    : Array.isArray((forms as any)?.forms)
+      ? (forms as any).forms
+      : Array.isArray((forms as any)?.data)
+        ? (forms as any).data
+        : [];
+
   return (
     <div className="space-y-8 pb-10">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
@@ -39,7 +47,7 @@ export default function FormsList() {
             <Skeleton key={i} className="h-40 rounded-xl" />
           ))}
         </div>
-      ) : !forms || forms.length === 0 ? (
+      ) : !formList || formList.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center border-2 border-dashed rounded-2xl bg-muted/10">
           <ClipboardList className="w-16 h-16 text-muted-foreground mb-4 opacity-50" />
           <h3 className="text-xl font-medium">No forms yet</h3>
@@ -50,7 +58,7 @@ export default function FormsList() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {forms.map((f, idx) => (
+          {formList.map((f: any, idx: number) => (
             <motion.div
               key={f.id}
               initial={{ opacity: 0, y: 8 }}

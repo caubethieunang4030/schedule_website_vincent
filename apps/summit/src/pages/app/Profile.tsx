@@ -56,7 +56,7 @@ export default function Profile() {
     );
   }
 
-  const initials = `${me.firstName?.[0] || ''}${me.lastName?.[0] || ''}` || me.email[0].toUpperCase();
+  const initials = (`${me?.firstName?.[0] || ""}${me?.lastName?.[0] || ""}` || me?.email?.[0] || "U").toUpperCase();
 
   const [qrTimestamp, setQrTimestamp] = useState(Date.now());
 
@@ -68,9 +68,9 @@ export default function Profile() {
   }, []);
 
   const qrData = useMemo(() => {
-    const signature = simpleHash(me.id + qrTimestamp + "VINCENT_QR_SECRET_SALT");
-    return JSON.stringify({ userId: me.id, ts: qrTimestamp, signature });
-  }, [me.id, qrTimestamp]);
+    const signature = simpleHash((me?.id || "anonymous") + qrTimestamp + "VINCENT_QR_SECRET_SALT");
+    return JSON.stringify({ userId: me?.id || "anonymous", ts: qrTimestamp, signature });
+  }, [me?.id, qrTimestamp]);
 
   return (
     <div className="space-y-8 pb-10 max-w-5xl">
@@ -89,16 +89,16 @@ export default function Profile() {
                   <AvatarFallback className="text-2xl">{initials}</AvatarFallback>
                 </Avatar>
                 <div className="space-y-1">
-                  <CardTitle className="text-3xl">{me.firstName} {me.lastName}</CardTitle>
-                  <CardDescription className="text-base">{me.email}</CardDescription>
+                  <CardTitle className="text-3xl">{me?.firstName ?? ""} {me?.lastName ?? ""}</CardTitle>
+                  <CardDescription className="text-base">{me?.email ?? ""}</CardDescription>
                   <div className="flex items-center gap-2 pt-2">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
                       <Shield className="w-3 h-3 mr-1" />
-                      {me.role.charAt(0).toUpperCase() + me.role.slice(1)}
+                      {(me?.role || "student").charAt(0).toUpperCase() + (me?.role || "student").slice(1)}
                     </span>
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
                       <UserIcon className="w-3 h-3 mr-1" />
-                      {me.division.charAt(0).toUpperCase() + me.division.slice(1)} Track
+                      {(me?.division || "all").charAt(0).toUpperCase() + (me?.division || "all").slice(1)} Track
                     </span>
                   </div>
                 </div>
@@ -123,7 +123,7 @@ export default function Profile() {
                       </Select>
                     ) : (
                       <div className="p-3 bg-muted/50 rounded-md border text-foreground">
-                        {me.role.charAt(0).toUpperCase() + me.role.slice(1)}
+                        {(me?.role || "student").charAt(0).toUpperCase() + (me?.role || "student").slice(1)}
                       </div>
                     )}
                   </div>
@@ -143,7 +143,7 @@ export default function Profile() {
                       </Select>
                     ) : (
                       <div className="p-3 bg-muted/50 rounded-md border text-foreground">
-                        {me.division.charAt(0).toUpperCase() + me.division.slice(1)}
+                        {(me?.division || "all").charAt(0).toUpperCase() + (me?.division || "all").slice(1)}
                       </div>
                     )}
                   </div>
@@ -155,8 +155,8 @@ export default function Profile() {
                 <>
                   <Button variant="outline" onClick={() => {
                     setIsEditing(false);
-                    setRole(me.role);
-                    setDivision(me.division);
+                    setRole(me?.role || "student");
+                    setDivision(me?.division || "all");
                   }}>Cancel</Button>
                   <Button onClick={handleSave} disabled={updateMe.isPending}>
                     <Save className="w-4 h-4 mr-2" />

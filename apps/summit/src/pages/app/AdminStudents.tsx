@@ -131,7 +131,15 @@ export default function AdminStudents() {
     XLSX.writeFile(wb, "students.xlsx");
   };
 
-  const filtered = (students ?? []).filter((s) => {
+  const studentList = Array.isArray(students)
+    ? students
+    : Array.isArray((students as any)?.students)
+      ? (students as any).students
+      : Array.isArray((students as any)?.data)
+        ? (students as any).data
+        : [];
+
+  const filtered = studentList.filter((s: any) => {
     if (!filter) return true;
     const q = filter.toLowerCase();
     return (
@@ -142,8 +150,8 @@ export default function AdminStudents() {
     );
   });
 
-  const total = students?.length ?? 0;
-  const registered = (students ?? []).filter((s) => s.registered).length;
+  const total = studentList.length;
+  const registered = studentList.filter((s: any) => s.registered).length;
 
   return (
     <div className="space-y-8 pb-10">
@@ -250,7 +258,7 @@ export default function AdminStudents() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((s) => (
+                {filtered.map((s: any) => (
                   <TableRow key={s.id}>
                     <TableCell className="font-mono text-xs">
                       {s.email}

@@ -65,6 +65,14 @@ export default function Notifications() {
   });
   const allowed = canManage(me?.role);
 
+  const notificationList = Array.isArray(items)
+    ? items
+    : Array.isArray((items as any)?.notifications)
+      ? (items as any).notifications
+      : Array.isArray((items as any)?.data)
+        ? (items as any).data
+        : [];
+
   const handleCreate = async () => {
     if (!form.title.trim() || !form.body.trim()) {
       toast({ title: "Title and body are required", variant: "destructive" });
@@ -165,7 +173,7 @@ export default function Notifications() {
             <Skeleton key={i} className="h-24 w-full rounded-xl" />
           ))}
         </div>
-      ) : !items || items.length === 0 ? (
+      ) : notificationList.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center border-2 border-dashed rounded-2xl bg-muted/10">
           <Bell className="w-16 h-16 text-muted-foreground mb-4 opacity-50" />
           <h3 className="text-xl font-medium">No notifications yet</h3>
@@ -175,7 +183,7 @@ export default function Notifications() {
         </div>
       ) : (
         <div className="space-y-3">
-          {items.map((n, idx) => {
+          {notificationList.map((n: any, idx: number) => {
             const Icon = LEVEL_ICON[(n.level as Level) ?? "info"];
             return (
               <motion.div
