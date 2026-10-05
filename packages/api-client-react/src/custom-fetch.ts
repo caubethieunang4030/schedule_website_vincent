@@ -641,6 +641,32 @@ export async function customFetch<T = unknown>(
     return forms as T;
   }
 
+  if (urlPath.includes("/checkin") || urlPath.includes("/attendance")) {
+    return { success: true, message: "Check-in successful", timestamp: new Date().toISOString() } as T;
+  }
+
+  if (urlPath.includes("/register") || urlPath.includes("/unregister")) {
+    let regs = getStorage("registrations", ["session_keynote_01", "session_web_upper_01"]);
+    const parts = urlPath.split("/");
+    const registerIdx = parts.findIndex((p) => p === "register" || p === "unregister");
+    const sId = registerIdx > 0 ? parts[registerIdx - 1] : parts[parts.length - 2];
+
+    if (method === "POST") {
+      if (sId && !regs.includes(sId)) {
+        regs = [...regs, sId];
+        setStorage("registrations", regs);
+      }
+      return { success: true, sessionId: sId } as T;
+    }
+    if (method === "DELETE") {
+      if (sId) {
+        regs = regs.filter((id: string) => id !== sId);
+        setStorage("registrations", regs);
+      }
+      return { success: true } as T;
+    }
+  }
+
   if (urlPath.includes("/api/students") || urlPath.includes("/api/invited-students")) {
     let students = getStorage("invited_students", [
       { id: "invited_01", email: "student.alex@student.rabungap.org", firstName: "Alex", lastName: "Johnson", division: "upper" },
@@ -667,28 +693,91 @@ export async function customFetch<T = unknown>(
     return students as T;
   }
 
-  if (urlPath.includes("/api/registrations") || urlPath.includes("/api/my-registrations")) {
-    let regs = getStorage("registrations", ["session_keynote_01", "session_web_upper_01"]);
-    if (method === "GET") return regs.map((sId: string) => ({ sessionId: sId })) as T;
-    if (method === "POST") {
-      let bodyData: any = {};
-      try {
-        if (typeof init.body === "string") bodyData = JSON.parse(init.body);
-      } catch (e) {}
-      const sId = bodyData.sessionId || urlPath.split("/").slice(-2)[0];
-      if (sId && !regs.includes(sId)) {
-        regs = [...regs, sId];
-        setStorage("registrations", regs);
-      }
-      return { success: true, sessionId: sId } as T;
-    }
-    if (method === "DELETE") {
-      const sId = urlPath.split("/").slice(-2)[0];
-      regs = regs.filter((id: string) => id !== sId);
-      setStorage("registrations", regs);
-      return { success: true } as T;
-    }
-    return regs as T;
+  if (urlPath.includes("/api/me/registrations") || urlPath.includes("/api/registrations")) {
+    const regs = getStorage("registrations", ["session_keynote_01", "session_web_upper_01"]);
+    const defaultSessions = [
+      {
+        id: "session_keynote_01",
+        title: "Learning Summit 2026: Opening Keynote",
+        description: "Welcome address by Head of School & keynote on Innovation in K-12 Education.",
+        location: "Main Campus",
+        room: "Grand Auditorium",
+        track: "required_all",
+        mandatory: true,
+        capacity: 600,
+        startsAt: "2026-09-09T08:00:00.000Z",
+        endsAt: "2026-09-09T09:00:00.000Z",
+        organizers: ["Vincent Admin"],
+        speakers: [{ name: "Dr. Elizabeth Vance", title: "Head of School" }],
+        tags: ["Keynote", "Plenary", "Mandatory"],
+      },
+      {
+        id: "session_stem_lower_01",
+        title: "STEM Explorers: Hands-on Robotics & Coding",
+        description: "Interactive session for Lower School students building their first LEGO robotics project.",
+        location: "Lower School Wing",
+        room: "Robotics Lab 101",
+        track: "lower",
+        mandatory: false,
+        capacity: 35,
+        startsAt: "2026-09-09T09:00:00.000Z",
+        endsAt: "2026-09-09T10:00:00.000Z",
+        organizers: ["Sarah Smith"],
+        speakers: [{ name: "Mark Davis", title: "STEM Coordinator" }],
+        tags: ["STEM", "Robotics", "Hands-on"],
+      },
+      {
+        id: "session_ai_middle_01",
+        title: "AI & Digital Ethics in Daily School Life",
+        description: "Understanding artificial intelligence tools, prompt engineering, and digital ethics.",
+        location: "Middle School Building",
+        room: "Room 204",
+        track: "middle",
+        mandatory: false,
+        capacity: 45,
+        startsAt: "2026-09-09T10:00:00.000Z",
+        endsAt: "2026-09-09T11:00:00.000Z",
+        organizers: ["Vincent Admin"],
+        speakers: [{ name: "Elena Rostova", title: "Tech Integrator" }],
+        tags: ["AI", "Digital Ethics"],
+      },
+      {
+        id: "session_web_upper_01",
+        title: "Full-Stack Web Development & Modern App Architecture",
+        description: "Deep dive into TypeScript, Vite, React, Express, and Database design for Upper School.",
+        location: "Innovation Hub",
+        room: "Tech Center Lab B",
+        track: "upper",
+        mandatory: false,
+        capacity: 40,
+        startsAt: "2026-09-09T13:00:00.000Z",
+        endsAt: "2026-09-09T14:00:00.000Z",
+        organizers: ["Vincent Admin"],
+        speakers: [{ name: "Vincent Huynh", title: "Lead Software Architect" }],
+        tags: ["Web Dev", "Coding"],
+      },
+      {
+        id: "session_faculty_edtech_01",
+        title: "Faculty Workshop: AI-Assisted Lesson Planning",
+        description: "Exclusive workshop for teachers on streamlining grading and creating personalized paths.",
+        location: "Faculty Lounge",
+        room: "Conference Room A",
+        track: "teachers",
+        mandatory: false,
+        capacity: 30,
+        startsAt: "2026-09-09T13:00:00.000Z",
+        endsAt: "2026-09-09T14:00:00.000Z",
+        organizers: ["Sarah Smith"],
+        speakers: [{ name: "Sarah Smith", title: "Department Chair" }],
+        tags: ["Faculty", "EdTech"],
+      },
+    ];
+    let sessions = getStorage("sessions", defaultSessions);
+    const registeredSessions = sessions.filter((s: any) => regs.includes(s.id)).map((s: any) => ({
+      ...s,
+      isRegistered: true,
+    }));
+    return registeredSessions as T;
   }
 
   if (urlPath.includes("/api/sessions")) {
@@ -771,6 +860,14 @@ export async function customFetch<T = unknown>(
     ];
 
     let sessions = getStorage("sessions", defaultSessions);
+    const regs = getStorage("registrations", ["session_keynote_01", "session_web_upper_01"]);
+
+    sessions = sessions.map((s: any) => ({
+      ...s,
+      isRegistered: regs.includes(s.id),
+      registeredCount: (s.registeredCount ?? 15) + (regs.includes(s.id) ? 1 : 0),
+    }));
+
     const parts = urlPath.split("/");
     const lastPart = parts[parts.length - 1];
 
@@ -784,4 +881,5 @@ export async function customFetch<T = unknown>(
 
   return [] as T;
 }
+
 
