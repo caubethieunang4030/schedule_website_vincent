@@ -36,12 +36,19 @@ const ADMIN_ROLES = ["faculty", "organizer", "admin"];
 export default function AppShell() {
   const { user } = useUser();
   const { data: me } = useGetMe();
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const isAdmin = ADMIN_ROLES.includes(me?.role ?? "");
 
+  useEffect(() => {
+    if (me && !isAdmin && location.startsWith("/app/admin")) {
+      setLocation("/app/profile");
+    }
+  }, [me, isAdmin, location, setLocation]);
+
   const navItems = [
+
     { href: "/app", label: "Dashboard", icon: LayoutDashboard },
     { href: "/app/schedule", label: "Schedule", icon: CalendarDays },
     { href: "/app/my-schedule", label: "My Schedule", icon: Calendar },

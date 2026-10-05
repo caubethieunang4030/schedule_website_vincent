@@ -459,7 +459,7 @@ export async function customFetch<T = unknown>(
   const urlPath = requestInfo.url;
 
   if (urlPath.endsWith("/api/me") || urlPath.endsWith("/api/me/")) {
-    return {
+    let profile = getStorage("user_profile", {
       id: "user_admin_01",
       email: "admin@rabungap.org",
       firstName: "Vincent",
@@ -467,8 +467,20 @@ export async function customFetch<T = unknown>(
       role: "admin",
       division: "all",
       imageUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=VincentAdmin",
-    } as T;
+    });
+
+    if (method === "PATCH" || method === "PUT") {
+      let bodyData: any = {};
+      try {
+        if (typeof init.body === "string") bodyData = JSON.parse(init.body);
+      } catch (e) {}
+      profile = { ...profile, ...bodyData };
+      setStorage("user_profile", profile);
+    }
+
+    return profile as T;
   }
+
 
 
   if (urlPath.includes("/api/users")) {
