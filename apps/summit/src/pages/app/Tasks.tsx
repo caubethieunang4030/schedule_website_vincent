@@ -79,6 +79,17 @@ const CATEGORIES = [
   { id: "personal_prep", label: "Personal Prep" },
 ] as const;
 
+function formatDueAt(dueAt: unknown): string | null {
+  if (!dueAt) return null;
+  const date = new Date(dueAt as string);
+  if (Number.isNaN(date.getTime())) return null;
+  return format(date, "dd/MM/yyyy HH:mm");
+}
+
+function asStatus(value: unknown): Status {
+  return STATUSES.includes(value as Status) ? (value as Status) : "todo";
+}
+
 function canManage(role?: string) {
   return role === "faculty" || role === "organizer" || role === "admin";
 }
@@ -490,7 +501,9 @@ export default function Tasks() {
       ) : (
         <div className="space-y-4">
           {filteredTasks.map((t: any, idx: number) => {
-            const checklistItems = t.checklists ?? [];
+            const status = asStatus(t.status);
+            const dueLabel = formatDueAt(t.dueAt);
+            const checklistItems = Array.isArray(t.checklists) ? t.checklists : [];
             const completedCount = checklistItems.filter((c: any) => c.isCompleted).length;
             const progressPercent = checklistItems.length > 0 ? Math.round((completedCount / checklistItems.length) * 100) : 0;
 
@@ -512,8 +525,8 @@ export default function Tasks() {
                           <Sparkles className="w-3 h-3 mr-1" /> Daily Dump
                         </Badge>
                       )}
-                      <Badge variant="outline" className={STATUS_TONE[(t.status as Status) ?? "todo"]}>
-                        {STATUS_LABEL[(t.status as Status) ?? "todo"]}
+                      <Badge variant="outline" className={STATUS_TONE[status]}>
+                        {STATUS_LABEL[status]}
                       </Badge>
                     </div>
                     {t.description && (
@@ -524,9 +537,9 @@ export default function Tasks() {
                         <UserCheck className="w-3.5 h-3.5" /> Assignee:{" "}
                         <strong className="text-foreground">{t.assigneeName ?? t.assigneeEmail ?? "Unassigned"}</strong>
                       </span>
-                      {t.dueAt && (
+                      {dueLabel && (
                         <span className="flex items-center gap-1">
-                          <Clock className="w-3.5 h-3.5 text-amber-600" /> Due: {format(new Date(t.dueAt), "dd/MM/yyyy HH:mm")}
+                          <Clock className="w-3.5 h-3.5 text-amber-600" /> Due: {dueLabel}
                         </span>
                       )}
                     </div>
@@ -535,7 +548,7 @@ export default function Tasks() {
                   {/* Actions & Status Dropdown */}
                   <div className="flex items-center gap-2">
                     <Select
-                      value={t.status}
+                      value={status}
                       onValueChange={(v) => handleStatusChange(t.id, v as Status)}
                     >
                       <SelectTrigger className="w-36">

@@ -1,3 +1,15 @@
+import {
+  DEFAULT_SESSIONS,
+  handleSessionsFallback,
+  loadRegIds,
+  loadSessions,
+} from "./static-host-sessions";
+import {
+  DEFAULT_TASKS,
+  handleTasksFallback,
+  loadTasks,
+} from "./static-host-tasks";
+
 export type CustomFetchOptions = RequestInit & {
   responseType?: "json" | "text" | "blob" | "auto";
 };
@@ -330,7 +342,13 @@ function getStorage<T>(key: string, defaultVal: T): T {
   try {
     if (typeof window !== "undefined") {
       const raw = localStorage.getItem(`summit_mock_${key}`);
-      if (raw) return JSON.parse(raw);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(defaultVal) && !Array.isArray(parsed)) {
+          return defaultVal;
+        }
+        return parsed;
+      }
     }
   } catch (e) {}
   return defaultVal;
@@ -343,36 +361,6 @@ function setStorage<T>(key: string, val: T): void {
     }
   } catch (e) {}
 }
-
-const DEFAULT_TASKS = [
-  {
-    id: "task_qr_prep_01",
-    title: "Set up QR Scanning Stations at Main Auditorium",
-    description: "Verify iPads and mobile scanners are connected to Wi-Fi and logged into Admin Check-in.",
-    assigneeId: "user_admin_01",
-    status: "in_progress",
-    category: "daily_group_dump",
-    priority: "urgent",
-    seasonYear: "2025-2026",
-    createdBy: "user_admin_01",
-    checklists: [
-      { id: "chk_01", title: "Check iPad battery levels", isCompleted: true },
-      { id: "chk_02", title: "Test QR scanner app", isCompleted: false },
-    ],
-  },
-  {
-    id: "task_roster_import_02",
-    title: "Final Roster Sync & Student Email Allowlist Check",
-    description: "Ensure all newly enrolled students are imported via CSV in Admin > Roster.",
-    assigneeId: "user_faculty_01",
-    status: "todo",
-    category: "personal_prep",
-    priority: "high",
-    seasonYear: "2025-2026",
-    createdBy: "user_admin_01",
-    checklists: [],
-  },
-];
 
 const DEFAULT_NOTIFICATIONS = [
   {
@@ -526,42 +514,9 @@ export async function customFetch<T = unknown>(
   }
 
   if (urlPath.includes("/api/dashboard/summary")) {
-    const currentTasks = getStorage("tasks", DEFAULT_TASKS);
-    const regs = getStorage("registrations", ["session_keynote_01", "session_web_upper_01"]);
-    const defaultSessions = [
-      {
-        id: "session_keynote_01",
-        title: "Learning Summit 2026: Opening Keynote",
-        description: "Welcome address by Head of School & keynote on Innovation in K-12 Education.",
-        location: "Main Campus",
-        room: "Grand Auditorium",
-        track: "required_all",
-        mandatory: true,
-        capacity: 600,
-        startsAt: "2026-09-09T08:00:00.000Z",
-        endsAt: "2026-09-09T09:00:00.000Z",
-        organizers: ["Vincent Admin"],
-        speakers: [{ name: "Dr. Elizabeth Vance", title: "Head of School" }],
-        tags: ["Keynote", "Plenary", "Mandatory"],
-      },
-      {
-        id: "session_web_upper_01",
-        title: "Full-Stack Web Development & Modern App Architecture",
-        description: "Deep dive into TypeScript, Vite, React, Express, and Database design for Upper School.",
-        location: "Innovation Hub",
-        room: "Tech Center Lab B",
-        track: "upper",
-        mandatory: false,
-        capacity: 40,
-        startsAt: "2026-09-09T13:00:00.000Z",
-        endsAt: "2026-09-09T14:00:00.000Z",
-        organizers: ["Vincent Admin"],
-        speakers: [{ name: "Vincent Huynh", title: "Lead Software Architect" }],
-        tags: ["Web Dev", "Coding"],
-      },
-    ];
-
-    let sessions = getStorage("sessions", defaultSessions);
+    const currentTasks = loadTasks(getStorage("tasks", DEFAULT_TASKS));
+    const regs = loadRegIds(getStorage("registrations", ["session_keynote_01", "session_web_upper_01"]));
+    let sessions = loadSessions(getStorage("sessions", DEFAULT_SESSIONS));
     const nextSessions = sessions
       .filter((s: any) => regs.includes(s.id))
       .map((s: any) => ({ ...s, isRegistered: true }));
@@ -570,82 +525,58 @@ export async function customFetch<T = unknown>(
       totalSessions: sessions.length,
       totalAttendees: 240,
       myRegisteredSessions: regs.length,
-      pendingTasks: currentTasks.filter((t: any) => t.status !== "completed").length,
-      nextSessions: nextSessions.length > 0 ? nextSessions : [sessions[0]],
-      trackDistribution: [
-        { track: "required_all", count: 1 },
-        { track: "lower", count: 1 },
-        { track: "middle", count: 1 },
-        { track: "upper", count: 1 },
-        { track: "teachers", count: 1 },
+      pendingTasks: currentTasks.filter((t) => t.status !== "done").length,
+      openTaskCount: currentTasks.filter((t) => t.status !== "done").length,
+      totalCheckIns: 0,
+      upcomingCount: nextSessions.length,
+      fullSessionsCount: 0,
+      averageRating: 0,
+      unreadNotifications: getStorage("notifications", DEFAULT_NOTIFICATIONS),
+      nextSessions: nextSessions.length > 0 ? nextSessions : sessions.slice(0, 1),
+      trackBreakdown: [
+        { track: "required_all", registeredCount: 1 },
+        { track: "lower", registeredCount: 1 },
+        { track: "middle", registeredCount: 1 },
+        { track: "upper", registeredCount: 1 },
+        { track: "teachers", registeredCount: 1 },
       ],
     } as T;
   }
 
-
-  if (urlPath.includes("/api/tasks")) {
-    let tasks = getStorage("tasks", DEFAULT_TASKS);
-
-    if (method === "GET") {
-      return tasks as T;
+  {
+    let bodyData: unknown = {};
+    try {
+      if (typeof init.body === "string") bodyData = JSON.parse(init.body);
+    } catch (e) {}
+    const taskResult = handleTasksFallback(
+      urlPath,
+      method,
+      bodyData,
+      getStorage("tasks", DEFAULT_TASKS),
+    );
+    if (taskResult.matched) {
+      setStorage("tasks", taskResult.tasks);
+      return taskResult.response as T;
     }
+  }
 
-    if (method === "POST") {
-      let bodyData: any = {};
-      try {
-        if (typeof init.body === "string") bodyData = JSON.parse(init.body);
-      } catch (e) {}
-
-      const newTask = {
-        id: `task_${Date.now()}`,
-        title: bodyData.title ?? "New Task",
-        description: bodyData.description ?? "",
-        assigneeId: bodyData.assigneeId || "user_admin_01",
-        status: bodyData.status ?? "todo",
-        category: bodyData.category ?? "general",
-        priority: bodyData.priority ?? "medium",
-        seasonYear: bodyData.seasonYear ?? "2025-2026",
-        dueAt: bodyData.dueAt ?? null,
-        createdBy: "user_admin_01",
-        createdAt: new Date().toISOString(),
-        checklists: Array.isArray(bodyData.initialChecklist)
-          ? bodyData.initialChecklist.map((title: string, i: number) => ({
-              id: `chk_${Date.now()}_${i}`,
-              title,
-              isCompleted: false,
-            }))
-          : [],
-      };
-
-      tasks = [newTask, ...tasks];
-      setStorage("tasks", tasks);
-      return newTask as T;
+  {
+    let bodyData: unknown = {};
+    try {
+      if (typeof init.body === "string") bodyData = JSON.parse(init.body);
+    } catch (e) {}
+    const sessionResult = handleSessionsFallback(
+      urlPath,
+      method,
+      bodyData,
+      getStorage("sessions", DEFAULT_SESSIONS),
+      getStorage("registrations", ["session_keynote_01", "session_web_upper_01"]),
+    );
+    if (sessionResult.matched) {
+      setStorage("sessions", sessionResult.sessions);
+      setStorage("registrations", sessionResult.regs);
+      return sessionResult.response as T;
     }
-
-    if (method === "PATCH" || method === "PUT") {
-      let bodyData: any = {};
-      try {
-        if (typeof init.body === "string") bodyData = JSON.parse(init.body);
-      } catch (e) {}
-
-      const parts = urlPath.split("/");
-      const targetId = parts[parts.length - 1];
-
-      tasks = tasks.map((t: any) => (t.id === targetId ? { ...t, ...bodyData } : t));
-      setStorage("tasks", tasks);
-      return (tasks.find((t: any) => t.id === targetId) ?? bodyData) as T;
-    }
-
-    if (method === "DELETE") {
-      const parts = urlPath.split("/");
-      const targetId = parts[parts.length - 1];
-
-      tasks = tasks.filter((t: any) => t.id !== targetId);
-      setStorage("tasks", tasks);
-      return { success: true } as T;
-    }
-
-    return tasks as T;
   }
 
   if (urlPath.includes("/api/notifications")) {
@@ -708,32 +639,6 @@ export async function customFetch<T = unknown>(
     return forms as T;
   }
 
-  if (pathname.includes("/checkin") || pathname.includes("/attendance")) {
-    return { success: true, message: "Check-in successful", timestamp: new Date().toISOString() } as T;
-  }
-
-  if (pathname.includes("/register") || pathname.includes("/unregister")) {
-    let regs = getStorage("registrations", ["session_keynote_01", "session_web_upper_01"]);
-    const parts = pathname.split("/");
-    const registerIdx = parts.findIndex((p) => p === "register" || p === "unregister");
-    const sId = registerIdx > 0 ? parts[registerIdx - 1] : parts[parts.length - 2];
-
-    if (method === "POST") {
-      if (sId && !regs.includes(sId)) {
-        regs = [...regs, sId];
-        setStorage("registrations", regs);
-      }
-      return { success: true, sessionId: sId } as T;
-    }
-    if (method === "DELETE") {
-      if (sId) {
-        regs = regs.filter((id: string) => id !== sId);
-        setStorage("registrations", regs);
-      }
-      return { success: true } as T;
-    }
-  }
-
   if (pathname.includes("/api/students") || pathname.includes("/api/invited-students")) {
     let students = getStorage("invited_students", [
       { id: "invited_01", email: "student.alex@student.rabungap.org", firstName: "Alex", lastName: "Johnson", division: "upper" },
@@ -760,194 +665,5 @@ export async function customFetch<T = unknown>(
     return students as T;
   }
 
-  if (pathname.includes("/api/me/registrations") || pathname.includes("/api/registrations")) {
-    const regs = getStorage("registrations", ["session_keynote_01", "session_web_upper_01"]);
-    const defaultSessions = [
-      {
-        id: "session_keynote_01",
-        title: "Learning Summit 2026: Opening Keynote",
-        description: "Welcome address by Head of School & keynote on Innovation in K-12 Education.",
-        location: "Main Campus",
-        room: "Grand Auditorium",
-        track: "required_all",
-        mandatory: true,
-        capacity: 600,
-        startsAt: "2026-09-09T08:00:00.000Z",
-        endsAt: "2026-09-09T09:00:00.000Z",
-        organizers: ["Vincent Admin"],
-        speakers: [{ name: "Dr. Elizabeth Vance", title: "Head of School" }],
-        tags: ["Keynote", "Plenary", "Mandatory"],
-      },
-      {
-        id: "session_stem_lower_01",
-        title: "STEM Explorers: Hands-on Robotics & Coding",
-        description: "Interactive session for Lower School students building their first LEGO robotics project.",
-        location: "Lower School Wing",
-        room: "Robotics Lab 101",
-        track: "lower",
-        mandatory: false,
-        capacity: 35,
-        startsAt: "2026-09-09T09:00:00.000Z",
-        endsAt: "2026-09-09T10:00:00.000Z",
-        organizers: ["Sarah Smith"],
-        speakers: [{ name: "Mark Davis", title: "STEM Coordinator" }],
-        tags: ["STEM", "Robotics", "Hands-on"],
-      },
-      {
-        id: "session_ai_middle_01",
-        title: "AI & Digital Ethics in Daily School Life",
-        description: "Understanding artificial intelligence tools, prompt engineering, and digital ethics.",
-        location: "Middle School Building",
-        room: "Room 204",
-        track: "middle",
-        mandatory: false,
-        capacity: 45,
-        startsAt: "2026-09-09T10:00:00.000Z",
-        endsAt: "2026-09-09T11:00:00.000Z",
-        organizers: ["Vincent Admin"],
-        speakers: [{ name: "Elena Rostova", title: "Tech Integrator" }],
-        tags: ["AI", "Digital Ethics"],
-      },
-      {
-        id: "session_web_upper_01",
-        title: "Full-Stack Web Development & Modern App Architecture",
-        description: "Deep dive into TypeScript, Vite, React, Express, and Database design for Upper School.",
-        location: "Innovation Hub",
-        room: "Tech Center Lab B",
-        track: "upper",
-        mandatory: false,
-        capacity: 40,
-        startsAt: "2026-09-09T13:00:00.000Z",
-        endsAt: "2026-09-09T14:00:00.000Z",
-        organizers: ["Vincent Admin"],
-        speakers: [{ name: "Vincent Huynh", title: "Lead Software Architect" }],
-        tags: ["Web Dev", "Coding"],
-      },
-      {
-        id: "session_faculty_edtech_01",
-        title: "Faculty Workshop: AI-Assisted Lesson Planning",
-        description: "Exclusive workshop for teachers on streamlining grading and creating personalized paths.",
-        location: "Faculty Lounge",
-        room: "Conference Room A",
-        track: "teachers",
-        mandatory: false,
-        capacity: 30,
-        startsAt: "2026-09-09T13:00:00.000Z",
-        endsAt: "2026-09-09T14:00:00.000Z",
-        organizers: ["Sarah Smith"],
-        speakers: [{ name: "Sarah Smith", title: "Department Chair" }],
-        tags: ["Faculty", "EdTech"],
-      },
-    ];
-    let sessions = getStorage("sessions", defaultSessions);
-    const registeredSessions = sessions.filter((s: any) => regs.includes(s.id)).map((s: any) => ({
-      ...s,
-      isRegistered: true,
-    }));
-    return registeredSessions as T;
-  }
-
-  if (pathname.includes("/api/sessions")) {
-    const defaultSessions = [
-      {
-        id: "session_keynote_01",
-        title: "Learning Summit 2026: Opening Keynote",
-        description: "Welcome address by Head of School & keynote on Innovation in K-12 Education.",
-        location: "Main Campus",
-        room: "Grand Auditorium",
-        track: "required_all",
-        mandatory: true,
-        capacity: 600,
-        startsAt: "2026-09-09T08:00:00.000Z",
-        endsAt: "2026-09-09T09:00:00.000Z",
-        organizers: ["Vincent Admin"],
-        speakers: [{ name: "Dr. Elizabeth Vance", title: "Head of School" }],
-        tags: ["Keynote", "Plenary", "Mandatory"],
-      },
-      {
-        id: "session_stem_lower_01",
-        title: "STEM Explorers: Hands-on Robotics & Coding",
-        description: "Interactive session for Lower School students building their first LEGO robotics project.",
-        location: "Lower School Wing",
-        room: "Robotics Lab 101",
-        track: "lower",
-        mandatory: false,
-        capacity: 35,
-        startsAt: "2026-09-09T09:00:00.000Z",
-        endsAt: "2026-09-09T10:00:00.000Z",
-        organizers: ["Sarah Smith"],
-        speakers: [{ name: "Mark Davis", title: "STEM Coordinator" }],
-        tags: ["STEM", "Robotics", "Hands-on"],
-      },
-      {
-        id: "session_ai_middle_01",
-        title: "AI & Digital Ethics in Daily School Life",
-        description: "Understanding artificial intelligence tools, prompt engineering, and digital ethics.",
-        location: "Middle School Building",
-        room: "Room 204",
-        track: "middle",
-        mandatory: false,
-        capacity: 45,
-        startsAt: "2026-09-09T10:00:00.000Z",
-        endsAt: "2026-09-09T11:00:00.000Z",
-        organizers: ["Vincent Admin"],
-        speakers: [{ name: "Elena Rostova", title: "Tech Integrator" }],
-        tags: ["AI", "Digital Ethics"],
-      },
-      {
-        id: "session_web_upper_01",
-        title: "Full-Stack Web Development & Modern App Architecture",
-        description: "Deep dive into TypeScript, Vite, React, Express, and Database design for Upper School.",
-        location: "Innovation Hub",
-        room: "Tech Center Lab B",
-        track: "upper",
-        mandatory: false,
-        capacity: 40,
-        startsAt: "2026-09-09T13:00:00.000Z",
-        endsAt: "2026-09-09T14:00:00.000Z",
-        organizers: ["Vincent Admin"],
-        speakers: [{ name: "Vincent Huynh", title: "Lead Software Architect" }],
-        tags: ["Web Dev", "Coding"],
-      },
-      {
-        id: "session_faculty_edtech_01",
-        title: "Faculty Workshop: AI-Assisted Lesson Planning",
-        description: "Exclusive workshop for teachers on streamlining grading and creating personalized paths.",
-        location: "Faculty Lounge",
-        room: "Conference Room A",
-        track: "teachers",
-        mandatory: false,
-        capacity: 30,
-        startsAt: "2026-09-09T13:00:00.000Z",
-        endsAt: "2026-09-09T14:00:00.000Z",
-        organizers: ["Sarah Smith"],
-        speakers: [{ name: "Sarah Smith", title: "Department Chair" }],
-        tags: ["Faculty", "EdTech"],
-      },
-    ];
-
-    let sessions = getStorage("sessions", defaultSessions);
-    const regs = getStorage("registrations", ["session_keynote_01", "session_web_upper_01"]);
-
-    sessions = sessions.map((s: any) => ({
-      ...s,
-      isRegistered: regs.includes(s.id),
-      registeredCount: (s.registeredCount ?? 15) + (regs.includes(s.id) ? 1 : 0),
-    }));
-
-    const parts = pathname.split("/");
-    const lastPart = parts[parts.length - 1];
-
-    if (lastPart && lastPart !== "sessions" && !lastPart.includes("?")) {
-      const found = sessions.find((s: any) => s.id === lastPart);
-      return (found || sessions[0]) as T;
-    }
-
-    return sessions as T;
-  }
-
-
   return [] as T;
 }
-
-

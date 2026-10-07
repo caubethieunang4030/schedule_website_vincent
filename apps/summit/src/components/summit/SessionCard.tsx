@@ -21,8 +21,16 @@ export function SessionCard({ session, showRegisterAction = true }: SessionCardP
   const register = useRegisterForSession();
   const unregister = useUnregisterFromSession();
 
-  const isFull = session.registeredCount >= session.capacity;
-  const progress = (session.registeredCount / session.capacity) * 100;
+  const capacity = Number(session.capacity) || 0;
+  const registeredCount = Number(session.registeredCount) || 0;
+  const isFull = capacity > 0 && registeredCount >= capacity;
+  const progress = capacity > 0 ? (registeredCount / capacity) * 100 : 0;
+  const startsLabel = Number.isNaN(new Date(session.startsAt).getTime())
+    ? ""
+    : format(new Date(session.startsAt), "h:mm a");
+  const endsLabel = Number.isNaN(new Date(session.endsAt).getTime())
+    ? ""
+    : format(new Date(session.endsAt), "h:mm a");
 
   const trackColors: Record<string, string> = {
     lower: "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800",
@@ -86,7 +94,7 @@ export function SessionCard({ session, showRegisterAction = true }: SessionCardP
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground pt-1">
               <div className="flex items-center gap-1.5">
                 <Clock className="w-4 h-4" />
-                {format(new Date(session.startsAt), "h:mm a")} - {format(new Date(session.endsAt), "h:mm a")}
+                {startsLabel}{startsLabel && endsLabel ? " - " : ""}{endsLabel}
               </div>
               <div className="flex items-center gap-1.5">
                 <MapPin className="w-4 h-4" />
@@ -109,7 +117,7 @@ export function SessionCard({ session, showRegisterAction = true }: SessionCardP
           <div className="flex items-center justify-between text-xs">
             <div className="flex items-center gap-1.5 text-muted-foreground">
               <Users className="w-4 h-4" />
-              <span>{session.registeredCount} / {session.capacity} registered</span>
+              <span>{registeredCount} / {capacity} registered</span>
             </div>
             {isFull && !session.isRegistered && (
               <Badge variant="secondary" className="text-xs">Full</Badge>

@@ -25,6 +25,7 @@ export default function Profile() {
   const [role, setRole] = useState<Role>("student");
   const [division, setDivision] = useState<Track>("all");
   const [isEditing, setIsEditing] = useState(false);
+  const [qrTimestamp, setQrTimestamp] = useState(Date.now());
 
   useEffect(() => {
     if (me) {
@@ -44,6 +45,18 @@ export default function Profile() {
     }
   };
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setQrTimestamp(Date.now());
+    }, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const qrData = useMemo(() => {
+    const signature = simpleHash((me?.id || "anonymous") + qrTimestamp + "VINCENT_QR_SECRET_SALT");
+    return JSON.stringify({ userId: me?.id || "anonymous", ts: qrTimestamp, signature });
+  }, [me?.id, qrTimestamp]);
+
   if (isLoading || !me || !user) {
     return (
       <div className="space-y-8 max-w-4xl">
@@ -57,20 +70,6 @@ export default function Profile() {
   }
 
   const initials = (`${me?.firstName?.[0] || ""}${me?.lastName?.[0] || ""}` || me?.email?.[0] || "U").toUpperCase();
-
-  const [qrTimestamp, setQrTimestamp] = useState(Date.now());
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setQrTimestamp(Date.now());
-    }, 10000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const qrData = useMemo(() => {
-    const signature = simpleHash((me?.id || "anonymous") + qrTimestamp + "VINCENT_QR_SECRET_SALT");
-    return JSON.stringify({ userId: me?.id || "anonymous", ts: qrTimestamp, signature });
-  }, [me?.id, qrTimestamp]);
 
   return (
     <div className="space-y-8 pb-10 max-w-5xl">
