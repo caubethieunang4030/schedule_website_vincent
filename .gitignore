@@ -12,6 +12,10 @@ build/
 .env
 .env.local
 .env.*.local
+functions/.env
+functions/index.mjs
+functions/server.mjs
+functions/cli-debug.log
 
 # Logs
 npm-debug.log*
@@ -30,3 +34,4 @@ ehthumbs.db
 Thumbs.db
 .vercel
 .firebase
+.firebase-home/

@@ -431,16 +431,31 @@ export async function customFetch<T = unknown>(
   const requestInfo = { method, url: resolveUrl(input) };
 
   try {
-    const response = await fetch(input, { ...init, method, headers });
+    const response = await fetch(input, {
+      credentials: init.credentials ?? "include",
+      ...init,
+      method,
+      headers,
+    });
+    const contentType = response.headers.get("content-type") || "";
+    const isHtml = contentType.includes("text/html");
 
-    if (response.ok) {
-      const contentType = response.headers.get("content-type") || "";
-      if (!contentType.includes("text/html")) {
+    if (!isHtml) {
+      if (response.ok) {
         return (await parseSuccessBody(response, responseType, requestInfo)) as T;
       }
+      const data = await parseErrorBody(response, method);
+      throw new ApiError(response, data, requestInfo);
     }
   } catch (e) {
+    if (e instanceof ApiError || e instanceof ResponseParseError || _baseUrl) {
+      throw e;
+    }
     // Network or static host fallback
+  }
+
+  if (_baseUrl) {
+    throw new Error(`API request failed: ${requestInfo.method} ${requestInfo.url}`);
   }
 
   // Graceful fallback for standalone static hosting (e.g. Firebase Hosting)

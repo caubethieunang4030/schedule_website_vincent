@@ -44,8 +44,17 @@ export default function Dashboard() {
     { label: "Avg Rating", value: (summary.averageRating || 0).toFixed(1), icon: Star, color: "text-yellow-500", bg: "bg-yellow-50 dark:bg-yellow-900/20" },
   ];
 
-  const emergencyNotifications = summary.unreadNotifications?.filter(n => n.level === "emergency") || [];
-  const infoNotifications = summary.unreadNotifications?.filter(n => n.level !== "emergency") || [];
+  const unread = Array.isArray(summary.unreadNotifications)
+    ? summary.unreadNotifications
+    : [];
+  const emergencyNotifications = unread.filter((n) => n.level === "emergency");
+  const infoNotifications = unread.filter((n) => n.level !== "emergency");
+  const trackBreakdown = Array.isArray(summary.trackBreakdown)
+    ? summary.trackBreakdown
+    : [];
+  const nextSessions = Array.isArray(summary.nextSessions)
+    ? summary.nextSessions
+    : [];
 
   const trackColors: Record<string, string> = {
     lower: "hsl(142 71% 45%)", // green
@@ -124,7 +133,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent className="flex-1 min-h-0 pt-4">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={summary.trackBreakdown || []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <BarChart data={trackBreakdown} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <XAxis 
                   dataKey="track" 
                   tickFormatter={(val) => val ? val.charAt(0).toUpperCase() + val.slice(1) : ''} 
@@ -138,7 +147,7 @@ export default function Dashboard() {
                   contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                 />
                 <Bar dataKey="registeredCount" radius={[4, 4, 0, 0]}>
-                  {(summary.trackBreakdown || []).map((entry, index) => (
+                  {trackBreakdown.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={trackColors[entry.track] || trackColors.all} />
                   ))}
                 </Bar>
@@ -158,8 +167,8 @@ export default function Dashboard() {
           </div>
           
           <div className="flex-1 overflow-y-auto pr-2 space-y-4">
-            {summary.nextSessions && summary.nextSessions.length > 0 ? (
-              summary.nextSessions.map((session, i) => (
+            {nextSessions.length > 0 ? (
+              nextSessions.map((session, i) => (
                 <motion.div
                   key={session.id}
                   initial={{ opacity: 0, x: 20 }}

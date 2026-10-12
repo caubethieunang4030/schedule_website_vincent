@@ -81,7 +81,11 @@ export async function requireAuth(
         role: "student",
         division: "all",
       })
+      .onConflictDoNothing({ target: users.id })
       .returning();
+    if (!user) {
+      [user] = await db.select().from(users).where(eq(users.id, userId));
+    }
   } else if (!isSchoolEmail(user.email)) {
     res
       .status(403)

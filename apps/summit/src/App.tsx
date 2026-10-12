@@ -17,6 +17,7 @@ import {
 } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { setAuthTokenGetter } from "@workspace/api-client-react";
 import { queryClient } from "@/lib/queryClient";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import NotFound from "@/pages/not-found";
@@ -27,7 +28,7 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 function SignInPage() {
   return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-slate-50 px-4">
+    <div className="flex min-h-[100dvh] items-center justify-center bg-[#F4F7F5] px-4">
       <SignIn
         routing="path"
         path={`${basePath}/sign-in`}
@@ -39,7 +40,7 @@ function SignInPage() {
 
 function SignUpPage() {
   return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-slate-50 px-4">
+    <div className="flex min-h-[100dvh] items-center justify-center bg-[#F4F7F5] px-4">
       <SignUp
         routing="path"
         path={`${basePath}/sign-up`}
@@ -47,6 +48,23 @@ function SignUpPage() {
       />
     </div>
   );
+}
+
+function ClerkApiAuthBridge() {
+  const { getToken } = useAuth();
+
+  useEffect(() => {
+    setAuthTokenGetter(async () => {
+      try {
+        return (await getToken()) ?? null;
+      } catch {
+        return null;
+      }
+    });
+    return () => setAuthTokenGetter(null);
+  }, [getToken]);
+
+  return null;
 }
 
 function ClerkQueryClientCacheInvalidator() {
@@ -112,6 +130,7 @@ function AppRoutes() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
+        <ClerkApiAuthBridge />
         <ClerkQueryClientCacheInvalidator />
         <Switch>
           <Route path="/" component={HomeRedirect} />
@@ -127,7 +146,7 @@ function AppRoutes() {
   );
 }
 
-function ErrorFallback() {
+function ErrorFallback({ error }: { error?: Error }) {
   return (
     <div className="flex min-h-[100dvh] flex-col items-center justify-center p-6 text-center bg-background">
       <div className="max-w-md space-y-4 bg-card border rounded-2xl p-6 shadow-lg">
@@ -135,6 +154,11 @@ function ErrorFallback() {
         <p className="text-sm text-muted-foreground">
           An unexpected application error occurred. Your session is still active.
         </p>
+        {error?.message ? (
+          <p className="text-xs text-left font-mono break-all bg-muted rounded-lg p-3">
+            {error.message}
+          </p>
+        ) : null}
         <button
           onClick={() => window.location.reload()}
           className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium text-sm hover:opacity-90 transition-opacity"
@@ -148,7 +172,7 @@ function ErrorFallback() {
 
 function App() {
   return (
-    <ErrorBoundary fallback={<ErrorFallback />}>
+    <ErrorBoundary fallback={(error) => <ErrorFallback error={error} />}>
       <WouterRouter base={basePath}>
         <AppRoutes />
       </WouterRouter>

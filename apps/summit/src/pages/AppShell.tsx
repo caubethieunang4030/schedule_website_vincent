@@ -137,16 +137,10 @@ export default function AppShell() {
           <Route path="/app/forms" component={FormsList} />
           <Route path="/app/notifications" component={Notifications} />
 
-          {isAdmin && (
-            <Route path="/app/admin/students" component={AdminStudents} />
-          )}
-          {isAdmin && (
-            <Route path="/app/admin/feedback" component={AdminFeedback} />
-          )}
-          {isAdmin && (
-            <Route path="/app/admin/sessions" component={AdminSessions} />
-          )}
-          {isAdmin && <Route path="/app/admin" component={AdminHome} />}
+          <Route path="/app/admin/students" component={AdminStudents} />
+          <Route path="/app/admin/feedback" component={AdminFeedback} />
+          <Route path="/app/admin/sessions" component={AdminSessions} />
+          <Route path="/app/admin" component={AdminHome} />
           <Route path="/app/profile" component={Profile} />
         </Switch>
       </div>

@@ -61,7 +61,9 @@ export default function SessionDetail() {
   const [rating, setRating] = useState<number>(5);
   const [comment, setComment] = useState("");
   const [scanning, setScanning] = useState(false);
-  
+  const [qrTimestamp, setQrTimestamp] = useState(Date.now());
+  const [showProjectionModal, setShowProjectionModal] = useState(false);
+
   const scannerRef = useRef<Html5Qrcode | null>(null);
 
   useEffect(() => {
@@ -71,6 +73,33 @@ export default function SessionDetail() {
       }
     };
   }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setQrTimestamp(Date.now());
+    }, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const myQrData = useMemo(() => {
+    if (!session || !me) return "";
+    const signature = simpleHash(me.id + session.id + qrTimestamp + "VINCENT_QR_SECRET_SALT");
+    return JSON.stringify({ userId: me.id, sessionId: session.id, ts: qrTimestamp, signature });
+  }, [me?.id, session?.id, qrTimestamp]);
+
+  const isPresenter = useMemo(() => {
+    if (!session || !me) return false;
+    if ((session as any).createdBy === me.id) return true;
+    if (session.organizers?.includes(me.id)) return true;
+    if (["faculty", "organizer", "admin"].includes(me.role ?? "")) return true;
+    const myName = [me.firstName, me.lastName].filter(Boolean).join(" ").toLowerCase();
+    const myEmail = me.email?.toLowerCase() || "";
+    return (session.speakers ?? []).some((s) => {
+      const sName = (s.name || "").toLowerCase();
+      const sBio = (s.bio || "").toLowerCase();
+      return (myName && sName.includes(myName)) || (myEmail && sBio.includes(myEmail));
+    });
+  }, [session, me]);
 
   const handleRegister = async () => {
     if (!id) return;
@@ -208,40 +237,12 @@ export default function SessionDetail() {
     );
   }
 
-  const isFull = session.registeredCount >= session.capacity;
-  const progress = (session.registeredCount / session.capacity) * 100;
+  const isFull = (session.registeredCount ?? 0) >= (session.capacity ?? 0);
+  const progress =
+    (session.capacity ?? 0) > 0
+      ? ((session.registeredCount ?? 0) / session.capacity) * 100
+      : 0;
   const canScan = me?.role === "faculty" || me?.role === "organizer" || me?.role === "admin";
-  
-  const [qrTimestamp, setQrTimestamp] = useState(Date.now());
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setQrTimestamp(Date.now());
-    }, 10000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const myQrData = useMemo(() => {
-    if (!session || !me) return "";
-    const signature = simpleHash(me.id + session.id + qrTimestamp + "VINCENT_QR_SECRET_SALT");
-    return JSON.stringify({ userId: me.id, sessionId: session.id, ts: qrTimestamp, signature });
-  }, [me?.id, session?.id, qrTimestamp]);
-
-  const isPresenter = useMemo(() => {
-    if (!session || !me) return false;
-    if ((session as any).createdBy === me.id) return true;
-    if (session.organizers?.includes(me.id)) return true;
-    if (["faculty", "organizer", "admin"].includes(me.role ?? "")) return true;
-    const myName = [me.firstName, me.lastName].filter(Boolean).join(" ").toLowerCase();
-    const myEmail = me.email?.toLowerCase() || "";
-    return (session.speakers ?? []).some((s) => {
-      const sName = s.name.toLowerCase();
-      const sBio = (s.bio || "").toLowerCase();
-      return (myName && sName.includes(myName)) || (myEmail && sBio.includes(myEmail));
-    });
-  }, [session, me]);
-
-  const [showProjectionModal, setShowProjectionModal] = useState(false);
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-10">

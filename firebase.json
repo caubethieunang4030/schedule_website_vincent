@@ -1,5 +1,21 @@
 {
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "predeploy": ["pnpm --filter summit-functions run build"],
+      "ignore": [
+        "node_modules",
+        ".git",
+        "src",
+        "build.mjs",
+        "*.ts",
+        ".env"
+      ]
+    }
+  ],
   "hosting": {
+    "site": "learning-summit---vincent",
     "public": "apps/summit/dist/public",
     "ignore": [
       "firebase.json",

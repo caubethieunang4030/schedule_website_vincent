@@ -3,7 +3,6 @@
 @layer theme, base, clerk, components, utilities;
 @import "tailwindcss";
 @import "tw-animate-css";
-@import "@clerk/themes/shadcn.css";
 @plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:is(.dark *));
@@ -132,7 +131,49 @@
   * {
     @apply border-border;
   }
+  html {
+    color-scheme: light;
+  }
   body {
     @apply font-sans antialiased bg-background text-foreground;
   }
+}
+
+/* Force Clerk login to stay light even when the OS is in dark mode. */
+.cl-modalBackdrop {
+  background: rgb(15 23 42 / 0.4);
+}
+.cl-cardBox,
+.cl-card,
+.cl-modalContent,
+.cl-rootBox {
+  background-color: #ffffff !important;
+  color: #1a2f23 !important;
+}
+.cl-headerTitle,
+.cl-formFieldLabel,
+.cl-footerActionText,
+.cl-identityPreviewText {
+  color: #1a2f23 !important;
+}
+.cl-headerSubtitle,
+.cl-footer,
+.cl-internal-1dauvpw {
+  color: #5c6b63 !important;
+}
+.cl-formFieldInput,
+.cl-input {
+  background-color: #ffffff !important;
+  color: #1a2f23 !important;
+  border-color: #cbd5e1 !important;
+}
+.cl-formButtonPrimary {
+  background-color: #1b5e3b !important;
+  color: #ffffff !important;
+}
+.cl-socialButtonsBlockButton,
+.cl-socialButtonsIconButton {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #1a2f23 !important;
 }
