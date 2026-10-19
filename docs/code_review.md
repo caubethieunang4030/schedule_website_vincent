@@ -1,60 +1,60 @@
-# Báo Cáo Review Code & Kế Hoạch Cải Tiến (Gap Summit)
+# Code Review Report and Improvement Plan (Gap Summit)
 
-Tài liệu này tổng hợp kết quả đánh giá chất lượng mã nguồn của dự án **schedule_website_vincent** cùng với kế hoạch chi tiết (checklist) để khắc phục các vấn đề đã được phát hiện.
-
----
-
-## 1. Đánh Giá Chất Lượng Code Hiện Tại
-
-### Ưu điểm
-*   **Cấu trúc Monorepo tối ưu**: Sử dụng `pnpm-workspaces` chia nhỏ module rõ ràng (`lib/db`, `lib/api-zod`, `artifacts/summit`, `artifacts/api-server`).
-*   **Xác thực và Phân quyền**: Tích hợp Clerk chặt chẽ kết hợp với kiểm tra email học sinh (`.edu`, `.org`).
-*   **Validation mạnh mẽ**: Dữ liệu đầu vào của API được xác thực bằng Zod schema dùng chung từ `@workspace/api-zod`.
-
-### Nhược điểm & Rủi ro
-1.  **Hiệu năng Database**: Việc sử dụng nhiều truy vấn rời rạc thay vì SQL JOIN trong hàm `decorateSessions` tăng độ trễ.
-2.  **Race Conditions**: Việc kiểm tra sức chứa (capacity) của Session ở tầng ứng dụng dễ dẫn đến tình trạng đăng ký quá giới hạn khi có nhiều request đồng thời.
-3.  **Lỗ hổng logic xác thực Email**: Hàm kiểm tra đuôi email `.org` hoặc `.edu` sử dụng `endsWith` đơn giản có thể bị đánh lừa bởi các tên miền con (subdomain) giả mạo.
+This document summarizes the source-quality review of **schedule_website_vincent** and a checklist for fixing the issues that were found.
 
 ---
 
-## 2. Kế Hoạch Khắc Phục (Fixing Checklist Plan)
+## 1. Current Code Quality
 
-### 🟩 Tầng Database & API Backend (`artifacts/api-server`)
+### Strengths
+*   **Clear monorepo structure**: `pnpm` workspaces split the modules cleanly (`lib/db`, `lib/api-zod`, `artifacts/summit`, `artifacts/api-server`).
+*   **Authentication and authorization**: Clerk is integrated tightly, together with a student-email check (`.edu`, `.org`).
+*   **Strong validation**: API input is validated with a shared Zod schema from `@workspace/api-zod`.
 
-- [ ] **Tối ưu hóa hàm `decorateSessions`**
-    *   [ ] Refactor truy vấn trong [sessions.ts](file:///Users/huynhduyanh/Git/schedule_website_vincent/artifacts/api-server/src/routes/sessions.ts) sử dụng SQL JOIN hoặc Subquery để lấy tổng số lượt đăng ký (`registeredCount`) và trạng thái đăng ký của user hiện tại (`isRegistered`) chỉ trong 1 câu SQL.
-    *   [ ] Đo lường lại thời gian phản hồi (response time) trước và sau tối ưu.
-
-- [ ] **Xử lý triệt để Race Conditions khi đăng ký**
-    *   [ ] Sử dụng Database Transactions với cơ chế Row Lock (`FOR UPDATE`) khi kiểm tra capacity.
-    *   [ ] Hoặc: Thiết lập ràng buộc (Constraint) hoặc điều kiện trực tiếp tại câu lệnh INSERT để đảm bảo không chèn bản ghi mới nếu đã đạt giới hạn.
-
-- [ ] **Cải thiện độ chính xác của hàm xác thực Email**
-    *   [ ] Cập nhật hàm `isSchoolEmail` trong [auth.ts](file:///Users/huynhduyanh/Git/schedule_website_vincent/artifacts/api-server/src/lib/auth.ts) để tách phần domain đứng sau ký tự `@` trước khi kiểm tra hậu tố tên miền.
-    *   [ ] Viết unit tests kiểm nghiệm với các trường hợp email hợp lệ/không hợp lệ (Ví dụ: `fake@edu.attacker.com` phải bị từ chối).
-
-- [ ] **Tái cấu trúc mã nguồn (Refactoring Codebase)**
-    *   [ ] Áp dụng mô hình **Controller Pattern** tách rời business logic ra khỏi file định tuyến Route.
-    *   [ ] Tạo global error handling middleware để thống nhất cấu trúc phản hồi lỗi dạng JSON.
-
-### 🟦 Tầng Giao Diện Người Dùng (`artifacts/summit`)
-
-- [ ] **Xử lý trạng thái tải (Loading) & Race Conditions trên UI**
-    *   [ ] Vô hiệu hóa (Disable) nút đăng ký ngay khi người dùng click để ngăn chặn gửi nhiều request trùng lặp.
-    *   [ ] Hiển thị skeleton loader khi cập nhật lại danh sách session đăng ký.
-
-- [ ] **Tối ưu hóa Cache của React Query**
-    *   [ ] Cấu hình tối ưu `staleTime` và `gcTime` để hạn chế gọi lại API liên tục khi chuyển đổi qua lại giữa các tab trong màn hình Dashboard/Schedule.
+### Weaknesses and risks
+1.  **Database performance**: `decorateSessions` runs many separate queries instead of a SQL JOIN, which adds latency.
+2.  **Race conditions**: Capacity is checked in application code, so concurrent requests can register past the limit.
+3.  **Email-check logic gap**: Checking that an email `endsWith` `.org` or `.edu` can be fooled by a lookalike subdomain.
 
 ---
 
-## 3. Lộ Trình Phát Triển Tính Năng Mới (Feature Roadmap)
+## 2. Fix Checklist
 
-- [ ] **Tính năng Điểm danh thông minh (Smart Attendance)**
-    *   [ ] Sinh mã QR động cho Faculty/Admin có thời gian hết hạn ngắn (tự làm mới mỗi 10 giây).
-    *   [ ] Tích hợp quét mã QR trực tiếp bằng Camera điện thoại của sinh viên trên ứng dụng web.
-- [ ] **Xuất báo cáo & Dữ liệu**
-    *   [ ] Cho phép Admin/Faculty xuất kết quả phản hồi biểu mẫu (Feedback & Forms) ra định dạng file CSV/Excel.
-- [ ] **Đồng bộ lịch cá nhân**
-    *   [ ] Hỗ trợ xuất lịch biểu của sinh viên dưới dạng file `.ics` (iCal) để thêm vào Apple Calendar hoặc Google Calendar.
+### Database and API backend (`artifacts/api-server`)
+
+- [ ] **Optimize `decorateSessions`**
+    *   [ ] Refactor the query in [sessions.ts](file:///Users/huynhduyanh/Git/schedule_website_vincent/artifacts/api-server/src/routes/sessions.ts) to use a SQL JOIN or subquery so `registeredCount` and the current user's `isRegistered` flag come back in one SQL statement.
+    *   [ ] Measure response time before and after the change.
+
+- [ ] **Close the registration race condition**
+    *   [ ] Use a database transaction with a row lock (`FOR UPDATE`) when checking capacity.
+    *   [ ] Or enforce the limit in the INSERT itself (a constraint or a condition) so a new row cannot be inserted once the limit is reached.
+
+- [ ] **Make the email check exact**
+    *   [ ] Update `isSchoolEmail` in [auth.ts](file:///Users/huynhduyanh/Git/schedule_website_vincent/artifacts/api-server/src/lib/auth.ts) so it takes the domain after `@` before checking the suffix.
+    *   [ ] Add unit tests for valid and invalid emails (for example, `fake@edu.attacker.com` must be rejected).
+
+- [ ] **Restructure the code**
+    *   [ ] Use a controller pattern so business logic is not inside the route file.
+    *   [ ] Add global error-handling middleware so error responses share one JSON shape.
+
+### User interface (`artifacts/summit`)
+
+- [ ] **Loading state and UI race conditions**
+    *   [ ] Disable the register button as soon as it is clicked so duplicate requests cannot be sent.
+    *   [ ] Show a skeleton loader while the registered-session list refreshes.
+
+- [ ] **Tune the React Query cache**
+    *   [ ] Set `staleTime` and `gcTime` so switching between Dashboard and Schedule tabs does not call the API on every visit.
+
+---
+
+## 3. Feature Roadmap
+
+- [ ] **Smart attendance**
+    *   [ ] Generate a short-lived QR code for faculty/admin that refreshes every 10 seconds.
+    *   [ ] Let students scan that QR code with the phone camera inside the web app.
+- [ ] **Export reports and data**
+    *   [ ] Let admin/faculty export feedback and form responses to CSV/Excel.
+- [ ] **Personal calendar sync**
+    *   [ ] Export a student's schedule as an `.ics` (iCal) file for Apple Calendar or Google Calendar.

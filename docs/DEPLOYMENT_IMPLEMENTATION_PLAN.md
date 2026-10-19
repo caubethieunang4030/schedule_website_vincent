@@ -1,53 +1,53 @@
-# KẾ HOẠCH TRIỂN KHAI VÀ SETUP HỆ THỐNG LEARNING SUMMIT
-> **Dự án:** Learning Summit Web Application (Monorepo)
-> **Mục tiêu:** Tái thiết lập quy trình Deploy tối ưu cho hệ thống quản lý sự kiện học thuật (~600+ người dùng đồng thời).
-> **Ngày cập nhật:** 29/09/2026
+# LEARNING SUMMIT DEPLOYMENT AND SETUP PLAN
+> **Project:** Learning Summit Web Application (Monorepo)
+> **Goal:** Rebuild a deployment process that can run the academic event system under load (~600+ concurrent users).
+> **Updated:** 29/09/2026
 
 ---
 
-## 1. TỔNG QUAN HẠ TẦNG VÀ PHƯƠNG ÁN TRIỂN KHAI (DEPLOYMENT OPTIONS)
+## 1. INFRASTRUCTURE OVERVIEW AND DEPLOYMENT OPTIONS
 
-Hệ thống **Learning Summit** là một **PNPM Monorepo** bao gồm:
-1. **Frontend Client (`apps/summit`):** SPA React 19 + Vite + Tailwind v4 + Clerk Auth.
-2. **Backend Services (`services/*`):** Express 5 API Gateway (Port 8080) và các Microservices (Users: 8081, Sessions: 8082, Feedback: 8083, Tasks: 8084, Notifications: 8085).
-3. **Database Layer (`packages/db`):** PostgreSQL + Drizzle ORM.
+**Learning Summit** is a **pnpm monorepo** with:
+1. **Frontend client (`apps/summit`):** React 19 SPA + Vite + Tailwind v4 + Clerk Auth.
+2. **Backend services (`services/*`):** Express 5 API gateway (port 8080) and microservices (Users: 8081, Sessions: 8082, Feedback: 8083, Tasks: 8084, Notifications: 8085).
+3. **Database layer (`packages/db`):** PostgreSQL + Drizzle ORM.
 
 ---
 
-### BẢNG SO SÁNH CÁC PHƯƠNG ÁN TRIỂN KHAI
+### DEPLOYMENT OPTIONS COMPARED
 
-| Tiêu chí | **Phương án 1: Single VPS + Docker Compose** <br>⭐ *(PHƯƠNG ÁN TỐI ƯU NHẤT)* | **Phương án 2: Hybrid Serverless (Vercel + Render + Managed DB)** | **Phương án 3: Self-hosted PaaS (Coolify / CapRover trên VPS)** |
+| Criterion | **Option 1: Single VPS + Docker Compose** <br>⭐ *(BEST FIT)* | **Option 2: Hybrid serverless (Vercel + Render + managed DB)** | **Option 3: Self-hosted PaaS (Coolify / CapRover on a VPS)** |
 | :--- | :--- | :--- | :--- |
-| **Chi phí** | **Cố định & Rất rẻ:** $6 - $12 / tháng (~150k - 300k VNĐ). | Free-tier khi rảnh; **$20 - $50+** / tháng cao điểm Summit. | **Cố định:** $10 - $20 / tháng (tùy cấu hình VPS). |
-| **Hiệu năng ngày Summit (600+ users)** | **Rất Cao & Tức Thì:** RAM 4GB/2 vCPU đáp ứng mượt mà, không bị cold-start hay timeout. | Phụ thuộc giới hạn Serverless (cold-start 15-30s & timeout request). | **Cao:** Quản lý tài nguyên linh hoạt qua Docker engine. |
-| **Bảo mật & Quản lý dữ liệu** | **100% Chủ động:** Dữ liệu lưu trên VPS riêng, dễ dàng backup DB (`pg_dump`). | Phụ thuộc vào hạ tầng đám mây bên thứ 3 (Neon/Supabase/Render). | **Chủ động:** Lưu trên VPS riêng. |
-| **Quy trình Deploy** | Đơn giản với 1 lệnh `docker compose up -d` hoặc CI/CD tự động qua SSH. | Tự động qua Git push (Vercel + Render). | Đơn giản qua Dashboard như Heroku. |
-| **Đánh giá** | **Khuyên dùng số 1** cho môi trường nhà trường (tiết kiệm, ổn định, chịu tải tốt). | Phù hợp thử nghiệm / Demo ngắn hạn. | Phù hợp nếu muốn giao diện quản trị Web UI. |
+| **Cost** | **Fixed and low:** $6–$12 / month. | Free tier while idle; **$20–$50+** / month at the Summit peak. | **Fixed:** $10–$20 / month (depends on the VPS size). |
+| **Summit-day performance (600+ users)** | **High and immediate:** 4GB RAM / 2 vCPU stays smooth, with no cold start or timeout. | Limited by serverless constraints (15–30s cold start and request timeouts). | **High:** Docker manages resources flexibly. |
+| **Security and data control** | **Fully under your control:** data lives on your VPS and is easy to back up (`pg_dump`). | Depends on a third-party cloud (Neon/Supabase/Render). | **Under your control:** data lives on your VPS. |
+| **Deploy process** | One command, `docker compose up -d`, or automatic CI/CD over SSH. | Automatic on git push (Vercel + Render). | A dashboard, similar to Heroku. |
+| **Assessment** | **First choice** for a school: cheaper, stable, and able to take the load. | Fine for a short trial or demo. | Fine if you want a web admin UI. |
 
 ---
 
-## 2. CHUẨN BỊ MÔI TRƯỜNG & BIẾN MÔI TRƯỜNG (ENVIRONMENT VARIABLES)
+## 2. ENVIRONMENT SETUP AND ENVIRONMENT VARIABLES
 
-### 2.1 Cấu hình phần cứng máy chủ VPS (Dành cho Phương án Tối ưu 1)
-- **Hệ điều hành:** Ubuntu 22.04 LTS hoặc 24.04 LTS (64-bit).
-- **Cấu hình đề xuất:** 2 vCPU, 4GB RAM, 40GB SSD (Ví dụ: Hetzner Cloud CX22, DigitalOcean, Linode hoặc VPS Việt Nam).
-- **Phần mềm bắt buộc:** Docker (v24+), Docker Compose (v2+), Nginx, Git.
+### 2.1 VPS hardware (for Option 1)
+- **Operating system:** Ubuntu 22.04 LTS or 24.04 LTS (64-bit).
+- **Suggested size:** 2 vCPU, 4GB RAM, 40GB SSD (for example Hetzner Cloud CX22, DigitalOcean, or Linode).
+- **Required software:** Docker (v24+), Docker Compose (v2+), Nginx, Git.
 
-### 2.2 Danh sách Biến Môi Trường (`.env`)
-Tạo file `.env` tại thư mục gốc của dự án trên máy chủ:
+### 2.2 Environment variables (`.env`)
+Create a `.env` file in the project root on the server:
 
 ```env
-# 1. Database Configuration
+# 1. Database configuration
 POSTGRES_USER=summit_user
 POSTGRES_PASSWORD=SecurePassword123!
 POSTGRES_DB=schedule_website_vincent
 DATABASE_URL=postgresql://summit_user:SecurePassword123!@postgres:5432/schedule_website_vincent
 
-# 2. Server & Session Configuration
+# 2. Server and session configuration
 PORT=8080
 SESSION_SECRET=a_very_long_and_random_secret_string_32chars_min
 
-# 3. Clerk Authentication (Lấy từ Clerk Dashboard)
+# 3. Clerk authentication (from the Clerk dashboard)
 CLERK_PUBLISHABLE_KEY=pk_test_...
 CLERK_SECRET_KEY=sk_test_...
 VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
@@ -55,70 +55,70 @@ VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
 
 ---
 
-## 3. CÁC BƯỚC SETUP TRIỂN KHAI CHI TIẾT (STEP-BY-STEP IMPLEMENTATION GUIDE)
+## 3. STEP-BY-STEP SETUP
 
-### BƯỚC 1: Cấu hình Server VPS & Bảo mật ban đầu
+### STEP 1: Configure the VPS and the initial firewall
 ```bash
-# 1. Cập nhật hệ thống
+# 1. Update the system
 sudo apt update && sudo apt upgrade -y
 
-# 2. Cài đặt Docker & Docker Compose
+# 2. Install Docker and Docker Compose
 curl -fsSL https://get.docker.com | sh
 sudo usermod -aG docker $USER
 
-# 3. Thiết lập Firewall (UFW)
+# 3. Configure the firewall (UFW)
 sudo ufw allow 22/tcp    # SSH
 sudo ufw allow 80/tcp    # HTTP
 sudo ufw allow 443/tcp   # HTTPS
 sudo ufw enable
 ```
 
-### BƯỚC 2: Clone Repository & Khởi tạo Cấu hình
+### STEP 2: Clone the repository and create the config
 ```bash
-# Clone dự án từ GitHub
+# Clone the project from GitHub
 git clone https://github.com/caubethieunang4030/schedule_website_vincent.git
 cd schedule_website_vincent
 
-# Tạo file .env từ file mẫu và điền tham số thực tế
+# Create .env from the example and fill in real values
 cp .env.example .env
 nano .env
 ```
 
-### BƯỚC 3: Triển khai bằng Docker Compose
-Dự án đã tích hợp sẵn `Dockerfile` và `docker-compose.yml`.
+### STEP 3: Deploy with Docker Compose
+The project already includes a `Dockerfile` and `docker-compose.yml`.
 
 ```bash
-# Khởi chạy toàn bộ hệ thống (PostgreSQL + API Monorepo Services)
+# Start the whole system (PostgreSQL + API monorepo services)
 docker compose up -d --build
 
-# Kiểm tra trạng thái các Container
+# Check container status
 docker compose ps
 
-# Xem log hoạt động
+# Follow the logs
 docker compose logs -f app
 ```
 
-### BƯỚC 4: Chạy Database Migration & Seed Dữ liệu
+### STEP 4: Run the database migration and seed data
 ```bash
-# Chạy migration tạo bảng trong PostgreSQL
+# Create the PostgreSQL tables
 docker compose exec app pnpm db:push
 
-# (Tùy chọn) Seed dữ liệu mẫu ban đầu cho sự kiện
+# (Optional) Seed sample event data
 docker compose exec app pnpm db:seed
 ```
 
-### BƯỚC 5: Cấu hình Reverse Proxy Nginx & Cấp SSL Miễn Phí (HTTPS)
-Cài đặt Nginx trên VPS để làm Reverse Proxy và quản lý chứng chỉ SSL:
+### STEP 5: Nginx reverse proxy and a free SSL certificate (HTTPS)
+Install Nginx on the VPS as a reverse proxy and to manage the SSL certificate:
 
 ```bash
-# Cài đặt Nginx & Certbot
+# Install Nginx and Certbot
 sudo apt install -y nginx certbot python3-certbot-nginx
 ```
 
-Tạo file cấu hình Nginx tại `/etc/nginx/sites-available/summit`:
+Create the Nginx config at `/etc/nginx/sites-available/summit`:
 ```nginx
 server {
-    server_name summit.truonghoc.edu.vn;
+    server_name summit.school.edu;
 
     location / {
         proxy_pass http://localhost:8080;
@@ -134,23 +134,23 @@ server {
 }
 ```
 
-Kích hoạt cấu hình và cấp chứng chỉ SSL tự động:
+Enable the config and issue the certificate:
 ```bash
 sudo ln -s /etc/nginx/sites-available/summit /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl reload nginx
 
-# Cấp HTTPS miễn phí qua Let's Encrypt
-sudo certbot --nginx -d summit.truonghoc.edu.vn
+# Free HTTPS through Let's Encrypt
+sudo certbot --nginx -d summit.school.edu
 ```
 
 ---
 
-## 4. QUY TRÌNH TỰ ĐỘNG HOÁ CI/CD VỚI GITHUB ACTIONS
+## 4. AUTOMATIC CI/CD WITH GITHUB ACTIONS
 
-Để mỗi khi bạn `git push` code mới lên nhánh `main`, server tự động pull và build lại:
+So that every `git push` to `main` makes the server pull and rebuild:
 
-Tạo tệp `.github/workflows/deploy.yml`:
+Create `.github/workflows/deploy.yml`:
 
 ```yaml
 name: Deploy Learning Summit to VPS
@@ -178,65 +178,63 @@ jobs:
 
 ---
 
-## 5. QUY TRÌNH VẬN HÀNH & SAO LƯU DỮ LIỆU (MAINTENANCE & BACKUP)
+## 5. OPERATIONS AND BACKUPS
 
-### 5.1 Kịch bản Sao lưu Dữ liệu Tự động (Backup Postgres)
-Thêm cron job sao lưu cơ sở dữ liệu hàng ngày vào `crontab -e`:
+### 5.1 Automatic Postgres backup
+Add a daily database backup to `crontab -e`:
 
 ```bash
 0 2 * * * docker exec summit_postgres pg_dump -U summit_user schedule_website_vincent | gzip > /var/backups/summit_db_$(date +\%Y\%m\%d).sql.gz
 ```
 
-### 5.2 Checklist chuẩn bị trước Ngày Summit (Summit Day Readiness)
-1. **Kiểm tra tài nguyên VPS:** Sử dụng `htop` đảm bảo RAM/CPU rảnh > 50%.
-2. **Kiểm tra Clerk Auth Domain:** Đảm bảo Production Domain đã được whitelist trên Clerk Dashboard.
-3. **Import danh sách học sinh:** Truy cập giao diện Admin -> Upload CSV/XLSX học sinh mới.
-4. **Kiểm tra QR Scan:** Thử nghiệm quét QR code điểm danh từ 2-3 thiết bị di động thực tế.
+### 5.2 Summit-day readiness checklist
+1. **Check VPS resources:** use `htop` and keep RAM/CPU more than 50% free.
+2. **Check the Clerk auth domain:** the production domain must be allowlisted in the Clerk dashboard.
+3. **Import the student list:** Admin → upload a CSV/XLSX of new students.
+4. **Check QR scanning:** try attendance QR codes from 2–3 real phones.
 
 ---
 
-## 7. PHƯƠNG PHÁP TRIỂN KHAI MIỄN PHÍ 100% TỒN TẠI VĨNH VIỄN (FREE-FOREVER OPTIONS)
+## 7. FREE DEPLOYMENT OPTIONS THAT CAN KEEP RUNNING
 
-Nếu bạn không muốn tốn chi phí duy trì hàng tháng và muốn ứng dụng chạy bền vững trong nhiều năm tới, dưới đây là **3 giải pháp miễn phí 100%** uy tín nhất:
+If you do not want a monthly bill and you want the app to keep running for years, these are the three most reliable free options:
 
-### ⭐ GIẢI PHÁP A: Oracle Cloud Always Free VPS (Chi tiết Rủi ro & Giải pháp Khắc phục)
-Oracle Cloud cung cấp gói **Always Free** vĩnh viễn:
-- **Tài nguyên:** 4 OCPU ARM (Ampere A1), 24GB RAM, 200GB SSD, 10TB Băng thông/tháng.
+### OPTION A: Oracle Cloud Always Free VPS (risks and how to handle them)
+Oracle Cloud offers a permanent **Always Free** plan:
+- **Resources:** 4 ARM OCPUs (Ampere A1), 24GB RAM, 200GB SSD, 10TB bandwidth / month.
 
-⚠️ **CÁC RỦI RO THỰC TẾ CẦN LƯU Ý:**
-1. **Thu hồi máy ảo do nhàn rỗi (Idle Resource Reclamation):** Nếu CPU dùng dưới 20% liên tục trong 7 ngày, Oracle có thể tự động thu hồi (terminate) VPS. Trang web trường học rảnh ban đêm/cuối tuần rất dễ dính bẫy này.
-2. **Khó khăn khi đăng ký & Tạo máy (Out of Capacity):** Thẻ thanh toán quốc tế kiểm duyệt gắt gao, khu vực Singapore/Tokyo thường xuyên hết máy ARM rảnh.
-3. **Tương thích Kiến trúc ARM64:** Docker container phải build và hỗ trợ `linux/arm64`. (Dự án `Learning Summit` hiện dùng `node:20-alpine` và `postgres:16-alpine` đều tương thích 100% với ARM64).
+**REAL RISKS TO WATCH:**
+1. **Idle resource reclamation:** if CPU stays under 20% for 7 days in a row, Oracle can terminate the VPS. A school site that is quiet at night and on weekends can hit this.
+2. **Signup and capacity:** international cards are reviewed strictly, and the Singapore/Tokyo regions often have no free ARM capacity.
+3. **ARM64 compatibility:** Docker images must build for `linux/arm64`. This project uses `node:20-alpine` and `postgres:16-alpine`, which both support ARM64.
 
-🛠️ **BIỆN PHÁP KHẮC PHỤC RỦI RO HOÀN HẢO:**
-- **Nâng cấp tài khoản sang PAYG (Pay-As-You-Go):** Sau khi đăng ký thành công, hãy nâng cấp tài khoản lên PAYG. Khi nằm trong định mức Always Free (< 4 OCPU, 24GB RAM, 200GB SSD), **Oracle sẽ KHÔNG BAO GIỜ trừ tiền** nhưng tài khoản của bạn sẽ **KHÔNG BAO GIỜ bị quét thu hồi do nhàn rỗi**.
-- **Sao lưu Dữ liệu Tự động Off-site:** Tạo Cron job dump PostgreSQL và tự động đẩy file nén lên Google Drive / GitHub Private Repo hàng ngày để bảo vệ dữ liệu điểm danh.
+**HOW TO REMOVE THE RISK:**
+- **Upgrade the account to Pay-As-You-Go:** after signup, switch the account to PAYG. While you stay inside the Always Free limits (< 4 OCPU, 24GB RAM, 200GB SSD), **Oracle does not charge you**, and the account is **not reclaimed for being idle**.
+- **Off-site database backups:** a cron job dumps PostgreSQL and uploads the archive to Google Drive or a private GitHub repo every day, so attendance data is protected.
 
-### ⭐ GIẢI PHÁP B: Tận dụng Máy tính cũ / Server của Trường + Cloudflare Tunnel (Bền vững nhất)
-- **Cách hoạt động:** Dùng 1 máy tính cũ ở phòng máy / phòng IT nhà trường, cài Docker Compose.
-- **Dùng Cloudflare Tunnel (Miễn phí 100%):**
-  - Cài đặt `cloudflared` trên máy: `cloudflared tunnel run --url http://localhost:8080 summit-tunnel`
-  - Cloudflare sẽ tự động cấp SSL HTTPS, tự động đưa trang web ra ngoài Internet mà **không cần mở Port router, không cần IP tĩnh**.
-- **Ưu điểm:** Không sợ bất kỳ dịch vụ Cloud nào hủy gói Free, chạy ổn định suốt nhiều năm học.
+### OPTION B: An old school computer or the school server, plus a Cloudflare Tunnel
+- **How it works:** use an old computer in the lab or the IT room and run Docker Compose on it.
+- **Cloudflare Tunnel (free):**
+  - Install `cloudflared` and run: `cloudflared tunnel run --url http://localhost:8080 summit-tunnel`
+  - Cloudflare issues HTTPS and publishes the site **without opening router ports and without a static IP**.
+- **Why it lasts:** it does not depend on a cloud vendor canceling a free plan, so it can run across many school years.
 
-### ⭐ GIẢI PHÁP C: Kết hợp Cloud Free Services (Cloudflare Pages + Render + Supabase + UptimeRobot)
+### OPTION C: Combined free cloud services (Cloudflare Pages + Render + Supabase + UptimeRobot)
 1. **Frontend (Cloudflare Pages):**
-   - Miễn phí 100% không giới hạn băng thông, tự cập nhật khi push code lên GitHub.
-   - Build Command: `pnpm --filter @workspace/summit build`
-   - Output Directory: `apps/summit/dist/public`
-2. **Backend (Render Free Web Service):**
-   - Tạo Web Service miễn phí trên Render cho `api-gateway`.
-   - **Mẹo giữ Server luôn thức:** Đăng ký [UptimeRobot.com](https://uptimerobot.com) (Miễn phí), tạo HTTP Monitor ping đường dẫn `https://<ten-backend>.onrender.com/health` **5 phút/lần** để chống Render ngắt kết nối khi rảnh.
-3. **Database (Supabase / Neon.tech Postgres Free):**
-   - Supabase cấp **500MB PostgreSQL** miễn phí vĩnh viễn (dư thừa chứa dữ liệu cho nhiều năm).
-4. **Authentication (Clerk Auth Free Tier):**
-   - Miễn phí **10,000 người dùng hàng tháng (MAU)**.
+   - Free, with no bandwidth cap, and it rebuilds when you push to GitHub.
+   - Build command: `pnpm --filter @workspace/summit build`
+   - Output directory: `apps/summit/dist/public`
+2. **Backend (Render free web service):**
+   - Create a free Render web service for `api-gateway`.
+   - **Keep the server awake:** sign up at [UptimeRobot.com](https://uptimerobot.com) (free) and create an HTTP monitor that pings `https://<backend-name>.onrender.com/health` **every 5 minutes** so Render does not spin the service down while it is idle.
+3. **Database (Supabase / Neon.tech free Postgres):**
+   - Supabase includes **500MB of PostgreSQL** on the free plan, which is enough for several years of this data.
+4. **Authentication (Clerk free tier):**
+   - **10,000 monthly active users** are included.
 
 ---
 
-## 8. TỔNG KẾT
-- **Phương án sản xuất chuẩn:** Single VPS + Docker Compose.
-- **Phương án miễn phí lâu dài nhất:** Oracle Cloud Always Free (Nâng cấp PAYG) HOẶC Server Trường + Cloudflare Tunnel.
-- **Tệp kế hoạch chi tiết:** Đã lưu tại [`docs/DEPLOYMENT_IMPLEMENTATION_PLAN.md`](file:///Users/huynhduyanh/Git/schedule_website_vincent/docs/DEPLOYMENT_IMPLEMENTATION_PLAN.md).
-
-
+## 8. SUMMARY
+- **Standard production option:** single VPS + Docker Compose.
+- **Longest-lasting free option:** Oracle Cloud Always Free (upgraded to PAYG), or the school server + a Cloudflare Tunnel.
+- **This plan lives at** [`docs/DEPLOYMENT_IMPLEMENTATION_PLAN.md`](docs/DEPLOYMENT_IMPLEMENTATION_PLAN.md).
