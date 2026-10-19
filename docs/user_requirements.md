@@ -1,76 +1,76 @@
-# Tài liệu Yêu cầu Người dùng (User Requirements)
-**Dự án:** Website Lịch trình Gap Learning Summit
+# User Requirements
+**Project:** Gap Learning Summit Schedule Website
 
 ---
 
-## 1. User Stories (Câu chuyện người dùng)
+## 1. User Stories
 
-Dưới đây là 3 User Stories tiêu biểu đại diện cho 3 nhóm đối tượng chính sử dụng hệ thống:
+Below are 3 representative user stories for the 3 main groups of people who use the system:
 
-**User Story 1: Học sinh (Student)**
-> "Là một **Học sinh**, tôi muốn có thể **lọc danh sách sự kiện theo khối học của mình** (Lower, Middle, Upper) để tôi **có thể dễ dàng tìm và đăng ký những lớp học phù hợp với độ tuổi thay vì phải xem toàn bộ lịch trình hỗn loạn**."
+**User Story 1: Student**
+> "As a **student**, I want to **filter the event list by my school division** (Lower, Middle, Upper) so that I **can easily find and register for classes that match my age instead of browsing the entire crowded schedule**."
 
-**User Story 2: Diễn giả (Speaker / Faculty)**
-> "Là một **Diễn giả**, tôi muốn **xem thông tin chi tiết về phòng học được phân công** (Tên phòng, Vị trí, Thời gian bắt đầu/kết thúc) trên giao diện cá nhân để tôi **có thể đến đúng địa điểm và chuẩn bị máy chiếu/tài liệu trước khi buổi Workshop bắt đầu**."
+**User Story 2: Speaker / Faculty**
+> "As a **speaker**, I want to **see the details of my assigned room** (room name, location, start time, and end time) on my personal screen so that I **can arrive at the right place and set up the projector and materials before the workshop starts**."
 
-**User Story 3: Người tổ chức (Organizer / Admin)**
-> "Là một **Người tổ chức**, tôi muốn **có thể chỉnh sửa thông tin chi tiết của một sự kiện** (như đổi tên, dời giờ, đổi phòng) trực tiếp thông qua giao diện Quản trị (CMS) để tôi **có thể cập nhật lịch trình ngay lập tức cho toàn bộ học sinh khi có sự cố phát sinh (ví dụ: trời mưa phải đổi phòng học ngoài trời)**."
-
----
-
-## 2. Use Cases Chi Tiết (Kịch bản sử dụng)
-
-Được chiết xuất từ các User Story ở phần trên, dưới đây là chi tiết các bước tương tác giữa Người dùng (Actor) và Hệ thống.
-
-### Use Case 1: Lọc sự kiện theo khối học (Filter Sessions by Track)
-*(Ánh xạ từ User Story 1)*
-
-- **Actor (Người thực hiện):** Học sinh (Student).
-- **Pre-condition (Điều kiện tiên quyết):** 
-  - Học sinh đã đăng nhập vào hệ thống thành công (qua Clerk).
-  - Học sinh đang ở màn hình danh sách Lịch trình ("Schedule").
-
-- **Main Flow (Luồng chính):**
-  1. Học sinh truy cập trang "Schedule" trên ứng dụng Web.
-  2. Hệ thống tải dữ liệu và hiển thị toàn bộ danh sách các sự kiện trong ngày Learning Summit.
-  3. Học sinh nhấn vào menu thả xuống (Dropdown) để chọn bộ lọc "Track" trên giao diện.
-  4. Học sinh chọn khối học của mình (Ví dụ: "Middle").
-  5. Hệ thống (Frontend) nhận diện thay đổi và tự động lọc danh sách sự kiện (chỉ giữ lại các sự kiện có gắn thẻ `track: "middle"` hoặc `track: "all"`).
-  6. Hệ thống làm mới giao diện ngay lập tức và hiển thị danh sách các sự kiện đã được lọc ra.
-
-- **Alternative Flow (Luồng thay thế / Lỗi):**
-  - **5a. Không có sự kiện nào phù hợp:** 
-    1. Nếu sau khi lọc, danh sách trả về là rỗng.
-    2. Hệ thống hiển thị giao diện rỗng (Empty State) với thông báo: *"Không có sự kiện nào phù hợp với bộ lọc hiện tại. Bạn đang có thời gian rảnh!"*
-  - **5b. Mất kết nối mạng khi đang tải API (Nếu lọc từ Server):**
-    1. Hệ thống báo lỗi Toast màu đỏ: *"Không thể tải danh sách sự kiện. Vui lòng kiểm tra lại kết nối mạng."*
-    2. Giữ nguyên trạng thái danh sách trước khi lọc và hiện nút "Thử lại" (Retry).
+**User Story 3: Organizer / Admin**
+> "As an **organizer**, I want to **edit an event's details** (such as the name, time, or room) directly in the admin interface (CMS) so that I **can update the schedule for every student immediately when something changes (for example, rain forces an outdoor class to move indoors)**."
 
 ---
 
-### Use Case 2: Chỉnh sửa thông tin sự kiện (Update Session Information)
-*(Ánh xạ từ User Story 3)*
+## 2. Detailed Use Cases
 
-- **Actor (Người thực hiện):** Người tổ chức (Organizer / Admin).
-- **Pre-condition (Điều kiện tiên quyết):** 
-  - Người dùng đã đăng nhập thành công và có quyền hạn Admin (role: "organizer" hoặc "admin").
-  - Đang ở trong trang Quản lý Sự kiện (CMS/Admin Dashboard).
+These flows are taken from the user stories above. They describe how a person (actor) and the system interact.
 
-- **Main Flow (Luồng chính):**
-  1. Organizer tìm và nhấn vào sự kiện muốn thay đổi thông tin (ví dụ: Workshop "Robotics Build Lab").
-  2. Nhấn vào nút "Chỉnh sửa" (Edit Session).
-  3. Hệ thống hiển thị một biểu mẫu (Form) Popup/Modal đã được điền sẵn các dữ liệu hiện tại của sự kiện (Tiêu đề, Mô tả, Phòng học, Sức chứa...).
-  4. Organizer tiến hành xóa tên phòng cũ và nhập tên phòng mới (Ví dụ đổi từ "M-110" sang "M-115").
-  5. Organizer nhấn nút "Lưu thay đổi" (Save/Update).
-  6. Hệ thống (Frontend) gửi một yêu cầu cập nhật `PUT /api/sessions/:id` chứa dữ liệu mới lên Máy chủ (Backend).
-  7. Backend API tiếp nhận, xác thực quyền Admin của người gửi, và chạy câu lệnh UPDATE vào Cơ sở dữ liệu Neon (PostgreSQL).
-  8. Hệ thống trả về kết quả Thành công (200 OK). Frontend đóng Form, hiển thị thông báo Toast màu xanh *"Cập nhật sự kiện thành công"* và tải lại dữ liệu mới lên màn hình.
+### Use Case 1: Filter Sessions by Track
+*(Mapped from User Story 1)*
 
-- **Alternative Flow (Luồng thay thế / Lỗi):**
-  - **7a. Dữ liệu nhập vào không hợp lệ (Validation Error):**
-    1. Nếu Organizer vô tình nhập Sức chứa (Capacity) là một số âm.
-    2. Middleware Zod trên Backend (hoặc Frontend) từ chối yêu cầu.
-    3. Hệ thống không lưu vào Database, trả về lỗi. Frontend bôi đỏ ô nhập liệu đó kèm dòng chữ cảnh báo *"Sức chứa phải là một số lớn hơn 0"*.
-  - **7b. Hết phiên đăng nhập hoặc không đủ quyền:**
-    1. Backend kiểm tra Token và phát hiện Token đã hết hạn, trả về mã lỗi `401 Unauthorized`.
-    2. Hệ thống hủy thao tác lưu, hiện thông báo lỗi và yêu cầu Organizer đăng nhập lại.
+- **Actor:** Student.
+- **Pre-conditions:**
+  - The student is signed in (through Clerk).
+  - The student is on the schedule list screen ("Schedule").
+
+- **Main flow:**
+  1. The student opens the "Schedule" page in the web app.
+  2. The system loads the data and shows every event for Learning Summit day.
+  3. The student opens the dropdown to choose the "Track" filter.
+  4. The student selects their division (for example, "Middle").
+  5. The frontend notices the change and filters the event list (keeping only events tagged `track: "middle"` or `track: "all"`).
+  6. The system refreshes immediately and shows the filtered events.
+
+- **Alternative flows / errors:**
+  - **5a. No matching events:**
+    1. The filtered list is empty.
+    2. The system shows an empty state: *"No events match the current filter. You have some free time!"*
+  - **5b. Network loss while loading the API (if filtering happens on the server):**
+    1. The system shows a red toast: *"Could not load the event list. Check your network connection."*
+    2. The previous list stays on screen, with a "Retry" button.
+
+---
+
+### Use Case 2: Update Session Information
+*(Mapped from User Story 3)*
+
+- **Actor:** Organizer / Admin.
+- **Pre-conditions:**
+  - The user is signed in and has an admin role (`organizer` or `admin`).
+  - The user is on the event management page (CMS / Admin Dashboard).
+
+- **Main flow:**
+  1. The organizer finds and opens the event they want to change (for example, the "Robotics Build Lab" workshop).
+  2. They click "Edit Session".
+  3. The system opens a popup form already filled with the event's current data (title, description, room, capacity, and so on).
+  4. The organizer clears the old room name and enters a new one (for example, changing "M-110" to "M-115").
+  5. The organizer clicks "Save" / "Update".
+  6. The frontend sends `PUT /api/sessions/:id` with the new data to the backend.
+  7. The backend API checks that the sender is an admin and runs an UPDATE against the Neon (PostgreSQL) database.
+  8. The system returns success (200 OK). The frontend closes the form, shows a green toast *"Event updated"*, and reloads the new data.
+
+- **Alternative flows / errors:**
+  - **7a. Invalid input (validation error):**
+    1. The organizer accidentally enters a negative capacity.
+    2. Zod middleware on the backend (or the frontend) rejects the request.
+    3. Nothing is saved. The frontend highlights that field with the warning *"Capacity must be a number greater than 0"*.
+  - **7b. Session expired or insufficient permission:**
+    1. The backend checks the token, finds that it has expired, and returns `401 Unauthorized`.
+    2. The system cancels the save, shows an error, and asks the organizer to sign in again.
